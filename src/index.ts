@@ -5,12 +5,25 @@ import { execSync } from "child_process";
 import chalk from "chalk";
 import { Command } from "commander";
 import inquirer from "inquirer";
-import { CommitMessage, GitAnalysis } from "./types";
+import { CommitMessage, GitAnalysis, CommitGenOptions } from "./types";
 import { ConfigManager } from "./config";
 import { configureCommand } from "./commands/configure";
 import { createProvider } from "./providers";
+import { CommitHistoryAnalyzer } from "./utils/commit-history";
+import { MultiCommitAnalyzer } from "./utils/multi-commit";
+import { IssueTrackerIntegration } from "./utils/issue-tracker";
 
 class CommitGen {
+  private historyAnalyzer: CommitHistoryAnalyzer;
+  private multiCommitAnalyzer: MultiCommitAnalyzer;
+  private issueTracker: IssueTrackerIntegration;
+
+  constructor() {
+    this.historyAnalyzer = new CommitHistoryAnalyzer();
+    this.multiCommitAnalyzer = new MultiCommitAnalyzer();
+    this.issueTracker = new IssueTrackerIntegration();
+  }
+
   private exec(cmd: string): string {
     try {
       return execSync(cmd, {
@@ -139,7 +152,6 @@ class CommitGen {
   }
 
   private combineCommitMessages(messages: CommitMessage[]): CommitMessage {
-    // Find the most common type
     const types = messages.map((m) => m.type);
     const typeCount = types.reduce((acc, t) => {
       acc[t] = (acc[t] || 0) + 1;
@@ -149,21 +161,17 @@ class CommitGen {
       (a, b) => b[1] - a[1]
     )[0][0];
 
-    // Combine scopes
     const scopes = messages.map((m) => m.scope).filter(Boolean);
     const uniqueScopes = [...new Set(scopes)];
     const scope =
       uniqueScopes.length > 0 ? uniqueScopes.slice(0, 2).join(", ") : undefined;
 
-    // Combine subjects
     const subjects = messages.map((m) => m.subject);
     const combinedSubject = subjects.join("; ");
 
-    // Combine bodies
     const bodies = messages.map((m) => m.body).filter(Boolean);
     const combinedBody = bodies.length > 0 ? bodies.join("\n\n") : undefined;
 
-    // Check if any message has breaking changes
     const hasBreaking = messages.some((m) => m.breaking);
 
     return {
@@ -175,11 +183,7 @@ class CommitGen {
     };
   }
 
-  async run(options: {
-    push?: boolean;
-    noverify?: boolean;
-    useAi?: boolean;
-  }): Promise<void> {
+  async run(options: CommitGenOptions): Promise<void> {
     console.log(
       chalk.bold.cyan("\n🚀 CommitGen") +
         chalk.gray(" - AI-Powered Commit Message Generator\n")
@@ -203,7 +207,52 @@ class CommitGen {
       process.exit(0);
     }
 
+    // Check for issue tracking integration
+    let issueRef = null;
+    if (options.linkIssues !== false) {
+      issueRef = this.issueTracker.extractIssueFromBranch();
+      if (issueRef) {
+        console.log(
+          chalk.cyan(
+            `\n${this.issueTracker.getIssueDisplay(issueRef)} detected`
+          )
+        );
+      }
+    }
+
+    // Check if multi-commit mode should be suggested
+    if (
+      options.multiCommit !== false &&
+      this.multiCommitAnalyzer.shouldSplit(analysis)
+    ) {
+      const { useMultiCommit } = await inquirer.prompt([
+        {
+          type: "confirm",
+          name: "useMultiCommit",
+          message: chalk.yellow(
+            "🔄 Multiple concerns detected. Split into separate commits?"
+          ),
+          default: true,
+        },
+      ]);
+
+      if (useMultiCommit) {
+        return this.runMultiCommit(analysis, options);
+      }
+    }
+
     this.displayAnalysis(analysis);
+
+    // Load commit history pattern for personalization
+    let historyPattern = null;
+    if (options.learnFromHistory !== false) {
+      historyPattern = await this.historyAnalyzer.getCommitPattern();
+      if (historyPattern) {
+        console.log(
+          chalk.cyan("\n📜 Personalizing based on your commit history")
+        );
+      }
+    }
 
     let suggestions: CommitMessage[] = [];
     let usingFallback = false;
@@ -231,7 +280,6 @@ class CommitGen {
 
           if (shouldConfigure) {
             await configureCommand();
-            // Reload config after configuration
             providerConfig = configManager.getProviderConfig();
           } else {
             console.log(
@@ -254,6 +302,21 @@ class CommitGen {
 
           if (!suggestions || suggestions.length === 0) {
             throw new Error("No suggestions generated");
+          }
+
+          // Personalize suggestions based on history
+          if (historyPattern) {
+            suggestions = suggestions.map((msg) =>
+              this.historyAnalyzer.personalizeCommitMessage(msg, historyPattern)
+            );
+          }
+
+          // Adjust type based on issue if available
+          if (issueRef) {
+            suggestions = suggestions.map((msg) => ({
+              ...msg,
+              type: this.issueTracker.suggestTypeFromIssue(issueRef, msg.type),
+            }));
           }
         }
       } catch (error) {
@@ -291,6 +354,93 @@ class CommitGen {
       usingFallback = true;
     }
 
+    await this.commitInteractive(suggestions, analysis, issueRef, options);
+  }
+
+  private async runMultiCommit(
+    analysis: GitAnalysis,
+    options: CommitGenOptions
+  ): Promise<void> {
+    const groups = this.multiCommitAnalyzer.groupFiles(analysis);
+
+    console.log(
+      chalk.cyan.bold(`\n🔄 Splitting into ${groups.length} commits:\n`)
+    );
+
+    groups.forEach((group, i) => {
+      console.log(chalk.gray(`${i + 1}. ${group.reason}`));
+      console.log(
+        chalk.gray(
+          `   Files: ${group.files.slice(0, 3).join(", ")}${
+            group.files.length > 3 ? "..." : ""
+          }`
+        )
+      );
+    });
+
+    const { proceed } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "proceed",
+        message: "Proceed with multi-commit?",
+        default: true,
+      },
+    ]);
+
+    if (!proceed) {
+      console.log(
+        chalk.yellow("\nCancelled. Falling back to single commit mode.")
+      );
+      return this.run({ ...options, multiCommit: false });
+    }
+
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      console.log(
+        chalk.cyan.bold(
+          `\n📝 Commit ${i + 1}/${groups.length}: ${group.reason}`
+        )
+      );
+
+      // Generate suggestions for this group
+      let suggestions = [group.suggestedMessage];
+
+      if (options.useAi !== false) {
+        try {
+          const configManager = new ConfigManager();
+          const providerConfig = configManager.getProviderConfig();
+
+          if (
+            providerConfig.apiKey ||
+            this.hasEnvironmentApiKey(providerConfig.provider)
+          ) {
+            const provider = createProvider(providerConfig);
+            suggestions = await provider.generateCommitMessage(group.analysis);
+          }
+        } catch (error) {
+          console.log(chalk.gray("Using suggested message for this commit"));
+        }
+      }
+
+      await this.commitInteractive(
+        suggestions,
+        group.analysis,
+        null,
+        options,
+        group.files
+      );
+    }
+
+    console.log(chalk.green.bold("\n✅ All commits completed!"));
+  }
+
+  private async commitInteractive(
+    suggestions: CommitMessage[],
+    analysis: GitAnalysis,
+    issueRef: any,
+    options: CommitGenOptions,
+    specificFiles?: string[]
+  ): Promise<void> {
     console.log(chalk.cyan.bold("💡 Suggested commit messages:\n"));
 
     const choices = suggestions.map((s, i) => {
@@ -327,7 +477,6 @@ class CommitGen {
 
     let commitMessage: string;
 
-    // Handle combined option
     if (selectedIndex === -1) {
       const combined = this.combineCommitMessages(suggestions);
       const combinedFormatted = this.formatCommitMessage(combined);
@@ -349,7 +498,13 @@ class CommitGen {
       ]);
 
       if (action === "back") {
-        return this.run(options);
+        return this.commitInteractive(
+          suggestions,
+          analysis,
+          issueRef,
+          options,
+          specificFiles
+        );
       } else if (action === "edit") {
         const { edited } = await inquirer.prompt([
           {
@@ -367,9 +522,7 @@ class CommitGen {
       } else {
         commitMessage = combinedFormatted;
       }
-    }
-    // Handle custom message option
-    else if (selectedIndex === -2) {
+    } else if (selectedIndex === -2) {
       const { customMessage } = await inquirer.prompt([
         {
           type: "input",
@@ -382,10 +535,15 @@ class CommitGen {
         },
       ]);
       commitMessage = customMessage;
-    }
-    // Handle regular selection
-    else {
-      const selected = this.formatCommitMessage(suggestions[selectedIndex]);
+    } else {
+      let selected = suggestions[selectedIndex];
+
+      // Add issue reference if available
+      if (issueRef && options.linkIssues !== false) {
+        selected = this.issueTracker.appendIssueToCommit(selected, issueRef);
+      }
+
+      const formatted = this.formatCommitMessage(selected);
 
       const { action } = await inquirer.prompt([
         {
@@ -401,14 +559,20 @@ class CommitGen {
       ]);
 
       if (action === "back") {
-        return this.run(options);
+        return this.commitInteractive(
+          suggestions,
+          analysis,
+          issueRef,
+          options,
+          specificFiles
+        );
       } else if (action === "edit") {
         const { edited } = await inquirer.prompt([
           {
             type: "input",
             name: "edited",
             message: "Edit commit message:",
-            default: selected,
+            default: formatted,
             validate: (input: string) => {
               if (!input.trim()) return "Commit message cannot be empty";
               return true;
@@ -417,7 +581,7 @@ class CommitGen {
         ]);
         commitMessage = edited;
       } else {
-        commitMessage = selected;
+        commitMessage = formatted;
       }
     }
 
@@ -427,7 +591,11 @@ class CommitGen {
     }
 
     try {
-      let commitCmd = `git commit -m "${commitMessage.replace(/"/g, '\\"')}"`;
+      let commitCmd = specificFiles
+        ? `git commit ${specificFiles
+            .map((f) => `"${f}"`)
+            .join(" ")} -m "${commitMessage.replace(/"/g, '\\"')}"`
+        : `git commit -m "${commitMessage.replace(/"/g, '\\"')}"`;
 
       if (options.noverify) {
         commitCmd += " --no-verify";
@@ -436,7 +604,7 @@ class CommitGen {
       this.exec(commitCmd);
       console.log(chalk.green("\n✅ Commit successful!"));
 
-      if (options.push) {
+      if (options.push && !specificFiles) {
         console.log(chalk.blue("\n📤 Pushing to remote..."));
         const currentBranch = this.exec("git branch --show-current");
         this.exec(`git push origin ${currentBranch}`);
@@ -527,10 +695,14 @@ const program = new Command();
 program
   .name("commitgen")
   .description("AI-powered commit message generator for Git")
-  .version("0.0.5")
+  .version("0.1.0")
   .option("-p, --push", "Push changes after committing")
   .option("-n, --noverify", "Skip git hooks (--no-verify)")
   .option("--no-ai", "Disable AI generation and use rule-based suggestions")
+  .option("-m, --multi-commit", "Enable multi-commit mode for atomic commits")
+  .option("--no-multi-commit", "Disable multi-commit mode")
+  .option("--no-history", "Disable commit history learning")
+  .option("--no-issues", "Disable issue tracker integration")
   .action(async (options) => {
     const commitGen = new CommitGen();
     await commitGen.run(options);
