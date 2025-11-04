@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/aevrHQ/commitgen/compare/v0.1.0...v0.1.1) (2025-11-04)
+
+
+### Features
+
+* **core, ai:** add utility to combine commit messages; implement combining of ai suggestions; introduce commit message consolidation ([87da203](https://github.com/aevrHQ/commitgen/commit/87da203876129fc615e45fbcb61bcdb4e2dae38b))
+
 ## [0.1.0](https://github.com/aevrHQ/commitgen/compare/v0.0.5...v0.1.0) (2025-11-03)
 
 
