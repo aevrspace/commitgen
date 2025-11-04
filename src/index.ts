@@ -695,7 +695,7 @@ const program = new Command();
 program
   .name("commitgen")
   .description("AI-powered commit message generator for Git")
-  .version("0.1.0")
+  .version("0.2.0")
   .option("-p, --push", "Push changes after committing")
   .option("-n, --noverify", "Skip git hooks (--no-verify)")
   .option("--no-ai", "Disable AI generation and use rule-based suggestions")
