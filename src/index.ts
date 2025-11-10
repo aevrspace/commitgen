@@ -13,6 +13,17 @@ import { CommitHistoryAnalyzer } from "./utils/commit-history";
 import { MultiCommitAnalyzer } from "./utils/multi-commit";
 import { IssueTrackerIntegration } from "./utils/issue-tracker";
 
+// Graceful shutdown handler
+process.on("SIGINT", () => {
+  console.log(chalk.yellow("\n\n👋 Cancelled by user"));
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  console.log(chalk.yellow("\n\n👋 Cancelled by user"));
+  process.exit(0);
+});
+
 class CommitGen {
   private historyAnalyzer: CommitHistoryAnalyzer;
   private multiCommitAnalyzer: MultiCommitAnalyzer;
