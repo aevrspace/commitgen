@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.6](https://github.com/aevrHQ/commitgen/compare/v0.2.5...v0.2.6) (2025-11-10)
+
+
+### Build System
+
+* **tsconfig:** enable json module resolution ([ba7517b](https://github.com/aevrHQ/commitgen/commit/ba7517b5ed47562c0f2d66847225aeee8413dc24))
+
 ### [0.2.5](https://github.com/aevrHQ/commitgen/compare/v0.2.4...v0.2.5) (2025-11-10)
 
 

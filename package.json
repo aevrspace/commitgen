@@ -1,6 +1,6 @@
 {
   "name": "@untools/commitgen",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "CLI to create generate commit messages",
   "main": "dist/index.js",
   "bin": {
