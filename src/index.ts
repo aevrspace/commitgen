@@ -16,6 +16,12 @@ import { Answers } from "inquirer";
 import { LoadingIndicator, withLoading } from "./utils/loading";
 import { readFileSync } from "fs";
 
+import packageJson from "../package.json";
+
+const getVersionSimple = () => {
+  return packageJson.version;
+};
+
 // Graceful shutdown handler
 process.on("SIGINT", () => {
   console.log(chalk.yellow("\n\n👋 Cancelled by user"));
@@ -784,16 +790,10 @@ class CommitGen {
 // CLI setup
 const program = new Command();
 
-// function to get version from package.json
-const getVersion = () => {
-  const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-  return packageJson.version;
-};
-
 program
   .name("commitgen")
   .description("AI-powered commit message generator for Git")
-  .version(getVersion())
+  .version(getVersionSimple())
   .option("-p, --push", "Push changes after committing")
   .option("-n, --noverify", "Skip git hooks (--no-verify)")
   .option("--use-ai", "Use AI generation (default: enabled)")
