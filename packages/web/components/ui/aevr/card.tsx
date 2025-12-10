@@ -6,6 +6,7 @@ import Link from "next/link";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/aevr/button";
+import Loader from "./loader";
 
 // Types
 export type CardVariant =
@@ -713,7 +714,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 opacity-100">
             <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium dark:bg-neutral-800">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-app-theme-500 border-t-transparent"></div>
+              <Loader loading className="text-app-theme-600" />
               Loading...
             </div>
           </div>

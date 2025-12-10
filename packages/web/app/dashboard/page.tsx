@@ -5,6 +5,7 @@ import { LoginForm } from "./_components/LoginForm";
 import { VerifyForm } from "./_components/VerifyForm";
 import { DashboardView } from "./_components/DashboardView";
 import { usePersistedState } from "@/hooks/aevr/use-persisted-state";
+import Loader from "@/components/ui/aevr/loader";
 
 export interface UserProfile {
   email: string;
@@ -77,7 +78,7 @@ export default function Dashboard() {
   if (!isHydrated) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-app-theme-500 border-t-transparent"></div>
+        <Loader loading className="text-app-theme-600" />
       </div>
     );
   }
