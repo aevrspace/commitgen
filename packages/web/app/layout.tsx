@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import Link from "next/link";
+import { Button } from "@/components/ui/aevr/button";
+import NextTopLoader from "nextjs-toploader";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -66,8 +70,67 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NextTopLoader showSpinner={false} color="#4f39f6" />
+
+        {/* Navbar */}
+        <header className="sticky top-0 px-4 z-50 w-full border-b border-neutral-100 bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/80">
+          <div className="mx-auto flex h-16 max-w-4xl items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <span className="text-lg font-bold tracking-tight">
+                  CommitGen
+                </span>
+              </Link>
+            </div>
+            <nav className="hidden gap-6 sm:flex">
+              <Link
+                href="https://github.com/aevrhq/commitgen"
+                className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+                target="_blank"
+              >
+                GitHub
+              </Link>
+            </nav>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard">
+                <Button variant="primary" size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
         <ThemeProvider enableSystem enableColorScheme attribute="class">
           {children}
+          {/* Footer */}
+          <footer className="border-t border-neutral-100 bg-white py-12 dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="mx-auto flex max-w-4xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
+              <p className="text-sm text-neutral-500 dark:text-neutral-500">
+                &copy; {new Date().getFullYear()} CommitGen. All rights
+                reserved.
+              </p>
+              <div className="flex gap-6">
+                <Link
+                  href="https://github.com/aevrhq/commitgen"
+                  className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                >
+                  GitHub
+                </Link>
+                <Link
+                  href="/privacy"
+                  className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                >
+                  Privacy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                >
+                  Terms
+                </Link>
+              </div>
+            </div>
+          </footer>
         </ThemeProvider>
       </body>
     </html>

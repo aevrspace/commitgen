@@ -29,5 +29,9 @@
     "url": "https://github.com/aevrHQ/commitgen.git"
   },
   "author": "Miracle Onyenma",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "npm@10.8.3",
+  "dependencies": {
+    "marked": "^17.0.1"
+  }
 }

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -150,4 +151,10 @@
 }
 
 @layer utilities {
+  .site-section {
+    @apply px-4;
+  }
+  .site-section > .wrapper {
+    @apply mx-auto py-12;
+  }
 }
