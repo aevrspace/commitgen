@@ -1,8 +1,5 @@
 import React, { ReactNode } from "react";
-import {
-  formatCurrency,
-  formatNumber,
-} from "@/utils/aevr/number-formatter";
+import { formatCurrency, formatNumber } from "@/utils/aevr/number-formatter";
 
 export interface SummaryItem {
   label: string;
@@ -27,9 +24,9 @@ const SummaryCard: React.FC<{
     <div
       className={`flex ${
         isHorizontal ? "flex-col" : "flex-col"
-      } gap-0 bg-white dark:bg-tw-modernblack-900 ${
+      } gap-0 bg-white dark:bg-neutral-900 ${
         summary
-          ? "rounded-b-2xl rounded-t-2xl !bg-tw-modernblack-100 dark:!bg-tw-modernblack-900"
+          ? "rounded-b-2xl rounded-t-2xl bg-neutral-100! dark:bg-neutral-900!"
           : "rounded-2xl"
       }`}
     >
@@ -38,7 +35,7 @@ const SummaryCard: React.FC<{
         {items.map((item, index) => (
           <div
             key={index}
-            className={`flex flex-wrap items-end justify-between border border-tw-modernblack-100 bg-white px-3 py-3 dark:border-tw-modernblack-600 dark:bg-tw-modernblack-800 ${
+            className={`flex flex-wrap items-end justify-between border border-neutral-100 bg-white px-3 py-3 dark:border-neutral-600 dark:bg-neutral-800 ${
               isHorizontal
                 ? // Horizontal layout classes
                   `flex-1 ${
@@ -65,11 +62,11 @@ const SummaryCard: React.FC<{
             }`}
           >
             <div className="flex flex-col gap-1">
-              <span className="text-sm text-tw-modernblack-500 dark:text-tw-modernblack-400">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
                 {item.label}
               </span>
               {typeof item.value === "string" && item.value.length > 0 ? (
-                <span className="font-medium text-tw-modernblack-900 dark:text-tw-modernblack-100">
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
                   {item.value}
                 </span>
               ) : (
@@ -94,12 +91,12 @@ const SummaryCard: React.FC<{
 
       {/* Summary Section - Always at bottom */}
       {summary && (
-        <div className="flex items-end justify-between rounded-b-2xl border-t-0 bg-tw-modernblack-100 p-3 dark:border-tw-modernblack-600 dark:bg-tw-modernblack-900">
+        <div className="flex items-end justify-between rounded-b-2xl border-t-0 bg-neutral-100 p-3 dark:border-neutral-600 dark:bg-neutral-900">
           <div className="flex flex-col gap-1">
-            <span className="text-sm text-tw-modernblack-500 dark:text-tw-modernblack-400">
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">
               {summary.label}
             </span>
-            <span className="font-medium text-tw-modernblack-900 dark:text-tw-modernblack-100">
+            <span className="font-medium text-neutral-900 dark:text-neutral-100">
               {summary.value || "Not provided"}
             </span>
           </div>

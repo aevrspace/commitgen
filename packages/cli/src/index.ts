@@ -827,6 +827,12 @@ program
     "Specify AI model to use (e.g., gemini-1.5-flash, gemini-2.5-pro)"
   )
   .action(async (options) => {
+    // Check for login flag first - independent of git status
+    if (options.login) {
+      await loginCommand();
+      return;
+    }
+
     const commitGen = new CommitGen();
     // Default useAi to true if not explicitly set
     if (options.useAi === undefined) {

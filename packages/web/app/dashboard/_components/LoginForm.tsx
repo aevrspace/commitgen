@@ -59,17 +59,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
               >
                 Email Address
               </label>
               <Field
                 name="email"
                 type="email"
-                className={`w-full rounded-xl border bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white ${
+                className={`w-full rounded-xl border bg-neutral-50 px-4 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 dark:bg-neutral-800 dark:text-white ${
                   errors.email && touched.email
                     ? "border-red-500 focus:ring-red-500/20"
-                    : "border-gray-200 focus:border-app-theme-500 focus:ring-app-theme-500/20 dark:border-gray-700"
+                    : "border-neutral-200 focus:border-app-theme-500 focus:ring-app-theme-500/20 dark:border-neutral-700"
                 }`}
                 placeholder="you@example.com"
               />

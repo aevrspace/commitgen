@@ -26,7 +26,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
           Dashboard
         </h1>
         <Button onClick={onLogout} variant="danger" size="sm" className="gap-2">
@@ -42,7 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             label: "Available Credits",
             value: user?.credits?.toString() ?? "0",
             content: (
-              <span className="text-xs text-gray-500 mt-1">
+              <span className="text-xs text-neutral-500 mt-1">
                 Used to generate commit messages
               </span>
             ),
@@ -63,7 +63,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         className="w-full"
       >
         <div className="relative">
-          <div className="w-full rounded-xl bg-gray-100 p-4 font-mono text-sm break-all text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+          <div className="w-full rounded-xl bg-neutral-100 p-4 font-mono text-sm break-all text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">
             {token}
           </div>
           <Button
@@ -76,9 +76,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <Copy variant="Bulk" color="currentColor" className="icon" />
           </Button>
         </div>
-        <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">
           Run{" "}
-          <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <code className="bg-neutral-100 px-1 py-0.5 rounded text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
             commitgen login
           </code>{" "}
           in your terminal or use this token in your configuration.

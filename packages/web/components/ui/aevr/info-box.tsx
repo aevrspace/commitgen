@@ -60,7 +60,7 @@ const infoBoxVariants = cva(
       },
       colorScheme: {
         default:
-          "border-gray-200 bg-gray-50 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100",
+          "border-neutral-200 bg-neutral-50 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100",
         full: "",
       },
     },
@@ -94,13 +94,13 @@ const infoBoxVariants = cva(
         type: "loading",
         colorScheme: "full",
         className:
-          "bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100",
+          "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100",
       },
       {
         type: "default",
         colorScheme: "full",
         className:
-          "bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100",
+          "bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100",
       },
     ],
     defaultVariants: {
@@ -115,12 +115,12 @@ const infoBoxVariants = cva(
 const iconContainerVariants = cva("relative flex items-start justify-center", {
   variants: {
     type: {
-      default: "bg-gray-100 dark:bg-gray-800",
+      default: "bg-neutral-100 dark:bg-neutral-800",
       warning: "bg-yellow-100 dark:bg-yellow-900/20",
       error: "bg-red-100 dark:bg-red-900/20",
       success: "bg-green-100 dark:bg-green-900/20",
       info: "bg-app-theme-100 dark:bg-app-theme-900/20",
-      loading: "bg-gray-100 dark:bg-gray-800",
+      loading: "bg-neutral-100 dark:bg-neutral-800",
     },
     size: {
       xs: "rounded-lg p-2",
@@ -141,12 +141,12 @@ const iconContainerVariants = cva("relative flex items-start justify-center", {
 const iconVariants = cva("icon", {
   variants: {
     type: {
-      default: "text-gray-500",
+      default: "text-neutral-500",
       warning: "text-yellow-500",
       error: "text-red-500",
       success: "text-green-500",
       info: "text-app-theme-500",
-      loading: "text-gray-500",
+      loading: "text-neutral-500",
     },
     size: {
       xs: "w-3 h-3",

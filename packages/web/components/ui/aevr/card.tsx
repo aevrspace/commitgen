@@ -43,16 +43,16 @@ export interface ActionObject {
 
 // CVA variants for the main card container
 const cardVariants = cva(
-  "relative overflow-hidden rounded-3xl border transition-all duration-200 dark:bg-gray-900",
+  "relative overflow-hidden rounded-3xl border transition-all duration-200 dark:bg-neutral-900",
   {
     variants: {
       variant: {
         default:
-          "border-gray-100 bg-white text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200",
+          "border-neutral-100 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200",
         primary:
           "border-app-theme-200 bg-app-theme-50 text-app-theme-800 dark:border-app-theme-800 dark:bg-app-theme-950 dark:text-app-theme-200",
         secondary:
-          "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200",
+          "border-neutral-200 bg-neutral-50 text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200",
         success:
           "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
         warning:
@@ -61,7 +61,7 @@ const cardVariants = cva(
           "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
         info: "border-app-theme-200 bg-app-theme-50 text-app-theme-800 dark:border-app-theme-800 dark:bg-app-theme-950 dark:text-app-theme-200",
         glass:
-          "border-white/20 bg-white/10 text-gray-800 backdrop-blur-xl dark:border-gray-700/50 dark:bg-gray-900/10 dark:text-gray-200",
+          "border-white/20 bg-white/10 text-neutral-800 backdrop-blur-xl dark:border-neutral-700/50 dark:bg-neutral-900/10 dark:text-neutral-200",
       },
       size: {
         xs: "p-3 text-sm",
@@ -120,7 +120,7 @@ const cardVariants = cva(
 
 // CVA variants for card header
 const cardHeaderVariants = cva(
-  " border-b  border-gray-100 dark:border-gray-700",
+  " border-b  border-neutral-100 dark:border-neutral-700",
   {
     variants: {
       borderless: {
@@ -175,18 +175,20 @@ const cardSubtitleVariants = cva("opacity-75", {
 const cardIconVariants = cva("flex items-center justify-center rounded-2xl", {
   variants: {
     variant: {
-      default: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+      default:
+        "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
       primary:
         "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
       secondary:
-        "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+        "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
       success:
         "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400",
       warning:
         "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400",
       error: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
       info: "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
-      glass: "bg-white/20 text-gray-600 dark:bg-gray-700/20 dark:text-gray-400",
+      glass:
+        "bg-white/20 text-neutral-600 dark:bg-neutral-700/20 dark:text-neutral-400",
     },
     size: {
       xs: "h-6 w-6 rounded-lg",
@@ -204,7 +206,7 @@ const cardIconVariants = cva("flex items-center justify-center rounded-2xl", {
 
 // CVA variants for card footer
 const cardFooterVariants = cva(
-  "border-t pt-2 border-gray-100 dark:border-gray-700",
+  "border-t pt-2 border-neutral-100 dark:border-neutral-700",
   {
     variants: {
       borderless: {
@@ -710,7 +712,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         {/* Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 opacity-100">
-            <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium dark:bg-gray-800">
+            <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium dark:bg-neutral-800">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-app-theme-500 border-t-transparent"></div>
               Loading...
             </div>
@@ -804,14 +806,14 @@ export const CardSkeleton: FC<{
         {showIcon && (
           <div
             className={cn(
-              "rounded-full bg-gray-200 dark:bg-gray-700",
+              "rounded-full bg-neutral-200 dark:bg-neutral-700",
               size === "sm" ? "h-8 w-8" : "h-12 w-12"
             )}
           />
         )}
         <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-2/3" />
-          <div className="h-3 bg-gray-200 rounded dark:bg-gray-700 w-1/2" />
+          <div className="h-4 bg-neutral-200 rounded dark:bg-neutral-700 w-2/3" />
+          <div className="h-3 bg-neutral-200 rounded dark:bg-neutral-700 w-1/2" />
         </div>
       </div>
       <div className="space-y-2 mt-4">
@@ -819,7 +821,7 @@ export const CardSkeleton: FC<{
           <div
             key={i}
             className={cn(
-              "h-3 bg-gray-200 rounded dark:bg-gray-700",
+              "h-3 bg-neutral-200 rounded dark:bg-neutral-700",
               i === lines - 1 ? "w-3/4" : "w-full"
             )}
           />

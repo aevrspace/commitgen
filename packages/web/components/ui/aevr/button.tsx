@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  `inline-flex w-fit transform cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:brightness-90 disabled:active:scale-100 focus:ring-offset-white dark:focus:ring-offset-gray-800`,
+  `inline-flex w-fit transform cursor-pointer items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:brightness-90 disabled:active:scale-100 focus:ring-offset-white dark:focus:ring-offset-neutral-800`,
   {
     variants: {
       variant: {
@@ -14,7 +14,7 @@ const buttonVariants = cva(
         primary:
           "bg-app-theme-500 text-app-theme-50 hover:bg-app-theme-600 focus:ring-app-theme-500 dark:bg-app-theme-600 dark:hover:bg-app-theme-700 dark:focus:ring-app-theme-600",
         secondary:
-          "border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 focus:ring-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-gray-600",
+          "border border-neutral-300 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:ring-neutral-600",
         tertiary:
           "bg-app-theme-100 text-app-theme-600 hover:bg-app-theme-200 focus:ring-app-theme-500 dark:bg-app-theme-800 dark:text-app-theme-200 dark:hover:bg-app-theme-700 dark:focus:ring-app-theme-600",
         ghost:

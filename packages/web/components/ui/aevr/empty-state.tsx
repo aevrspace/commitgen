@@ -20,11 +20,11 @@ const emptyStateVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50",
+          "border border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900/50",
         primary:
           "border border-app-theme-200 bg-app-theme-50/50 dark:border-app-theme-800 dark:bg-app-theme-950/50",
         secondary:
-          "border border-gray-200 bg-gray-100/50 dark:border-gray-700 dark:bg-gray-800/50",
+          "border border-neutral-200 bg-neutral-100/50 dark:border-neutral-700 dark:bg-neutral-800/50",
         success:
           "border border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50",
         warning:
@@ -70,11 +70,11 @@ const iconContainerVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+          "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
         primary:
           "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
         secondary:
-          "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+          "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
         success:
           "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400",
         warning:
@@ -82,7 +82,7 @@ const iconContainerVariants = cva(
         error: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
         info: "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
         ghost:
-          "bg-gray-100/50 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
+          "bg-neutral-100/50 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400",
       },
       size: {
         sm: "h-12 w-12",
@@ -102,14 +102,14 @@ const iconContainerVariants = cva(
 const titleVariants = cva("font-semibold", {
   variants: {
     variant: {
-      default: "text-gray-900 dark:text-gray-100",
+      default: "text-neutral-900 dark:text-neutral-100",
       primary: "text-app-theme-900 dark:text-app-theme-100",
-      secondary: "text-gray-900 dark:text-gray-100",
+      secondary: "text-neutral-900 dark:text-neutral-100",
       success: "text-green-900 dark:text-green-100",
       warning: "text-yellow-900 dark:text-yellow-100",
       error: "text-red-900 dark:text-red-100",
       info: "text-app-theme-900 dark:text-app-theme-100",
-      ghost: "text-gray-900 dark:text-gray-100",
+      ghost: "text-neutral-900 dark:text-neutral-100",
     },
     size: {
       sm: "text-base",

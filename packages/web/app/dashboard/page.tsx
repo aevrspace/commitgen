@@ -56,7 +56,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 dark:bg-gray-950 md:p-8">
+    <div className="min-h-screen bg-neutral-50/50 p-4 dark:bg-neutral-950 md:p-8">
       <div className="mx-auto max-w-4xl">
         {currentStep === "login" && (
           <div className="flex min-h-[80vh] items-center justify-center">
