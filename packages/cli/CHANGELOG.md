@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.1](https://github.com/aevrHQ/commitgen/compare/v0.3.0...v0.3.1) (2025-12-10)
+
+
+### Features
+
+* Add /api/auth/me endpoint to retrieve authenticated user details. ([eff7b7d](https://github.com/aevrHQ/commitgen/commit/eff7b7d3b0a14ab451be9823540ba784e7267191))
+* Add CLI login command, web dashboard with authentication, new API routes, and data models. ([381de90](https://github.com/aevrHQ/commitgen/commit/381de9003b2da69116e518317f71a1491a94ab4b))
+* Add global environment variables and expand build outputs to include Next.js artifacts. ([66eb926](https://github.com/aevrHQ/commitgen/commit/66eb926f9a3b80d35d76432bc2260d079ce4b324))
+* Add Privacy Policy and Terms of Service pages and update homepage footer links. ([e0b76cb](https://github.com/aevrHQ/commitgen/commit/e0b76cbd460328d1da915dcde359b89edb48243e))
+* Add PWA icons and comprehensive metadata for SEO and social sharing. ([d1e5e1b](https://github.com/aevrHQ/commitgen/commit/d1e5e1bb6d0fb204f7bcdd60980e847d319dcaad))
+* implement a modular email service with support for Nodemailer, ZeptoMail, and Resend, including ZeptoMail type definitions. ([a92a08e](https://github.com/aevrHQ/commitgen/commit/a92a08e4551e00035ecdcc7fce54630ce02d5959))
+* implement new CommitGen landing page and update repository branding. ([5cd3e7a](https://github.com/aevrHQ/commitgen/commit/5cd3e7a9505f8908bb60b831f93ec45d700e0c38))
+* Introduce custom app theme for UI components and enhance login email template. ([ff1dd07](https://github.com/aevrHQ/commitgen/commit/ff1dd0750100e520005e637798fdbf265950ee52))
+* Move Navbar and Footer components to layout and integrate Next.js top loader. ([9a28216](https://github.com/aevrHQ/commitgen/commit/9a28216777ca067d0ba4d709532f1a2443447bc0))
+* Narrow global content width, integrate Tailwind CSS Typography, and add site section utilities. ([c08ea4d](https://github.com/aevrHQ/commitgen/commit/c08ea4db1d60023dcc72b2c27ad2c73778f3a041))
+* **web:** add Next.js web application package to monorepo ([f546ed8](https://github.com/aevrHQ/commitgen/commit/f546ed8014178dff4970d54bf61f4bb4f19c49fd))
+
+
+### Code Refactoring
+
+* Extract dashboard login, verification, and main view into separate components, leveraging persisted auth state. ([8453322](https://github.com/aevrHQ/commitgen/commit/8453322981336b491babbe919240db3b910bcdd3))
+* Migrate Tailwind CSS `gray` and `tw-modernblack` classes to `neutral` color palette. ([cc69639](https://github.com/aevrHQ/commitgen/commit/cc69639c5869bd6306d474b3bf91e3e14b535b99))
+* Remove `useEffect` for initial step determination, deriving the current view from the authentication token. ([b6ddc80](https://github.com/aevrHQ/commitgen/commit/b6ddc8011b15cdc968e3c41678408a5c0070d665))
+* Reorder `handleLogout` function definition ([2e6a51d](https://github.com/aevrHQ/commitgen/commit/2e6a51d41f0aa6103f64c1dacc4ca09aa83d2348))
+* Replace custom spinner divs with the shared Loader component in Card and Dashboard. ([27f2902](https://github.com/aevrHQ/commitgen/commit/27f2902868a3cb3f15112c6eb3c82b2646d51baa))
+
+
+### Documentation
+
+* Expand README with detailed project description, features, tech stack, and comprehensive usage instructions. ([757e6d6](https://github.com/aevrHQ/commitgen/commit/757e6d6c8d75200ed2083cbe4f34b41cb567b5cb))
+* Update README with new frontend framework versions and backend database. ([4d1967a](https://github.com/aevrHQ/commitgen/commit/4d1967a5437c06e46853bbe66dac30e8e3f62009))
+
+
+### Chores
+
+* **monorepo:** restructure into monorepo with turbo and workspaces ([2b382c8](https://github.com/aevrHQ/commitgen/commit/2b382c849cef90e61931b031ab5f6234a1b95767))
+* Rename `pipeline` to `tasks` in turbo.json. ([e9b1358](https://github.com/aevrHQ/commitgen/commit/e9b1358bc0142c151f01e924dd081b24769df479))
+* update application title and description metadata ([03a0deb](https://github.com/aevrHQ/commitgen/commit/03a0deb518fc1e20f55da51cf088091df95367a1))
+* Update default API URLs from localhost to the production domain. ([3cbeec9](https://github.com/aevrHQ/commitgen/commit/3cbeec9051f102acd2e688d71b99a8dd6ec3e861))
+
 ## [0.3.0](https://github.com/aevrHQ/commitgen/compare/v0.2.6...v0.3.0) (2025-11-14)
 
 
