@@ -55,7 +55,7 @@ commitgen/
 
 ```bash
 # Clone the repository
-git clone https://github.com/miracleio/commitgen.git
+git clone https://github.com/aevrhq/commitgen.git
 cd commitgen
 
 # Install dependencies (from root)

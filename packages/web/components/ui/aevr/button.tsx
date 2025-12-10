@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-slate-500 text-slate-50 hover:bg-slate-600 focus:ring-slate-500 dark:bg-slate-600 dark:hover:bg-slate-700 dark:focus:ring-slate-600",
+          "bg-neutral-500 text-neutral-50 hover:bg-neutral-600 focus:ring-neutral-500 dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:focus:ring-neutral-600",
         primary:
           "bg-app-theme-500 text-app-theme-50 hover:bg-app-theme-600 focus:ring-app-theme-500 dark:bg-app-theme-600 dark:hover:bg-app-theme-700 dark:focus:ring-app-theme-600",
         secondary:
