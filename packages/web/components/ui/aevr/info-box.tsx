@@ -12,7 +12,7 @@ import Link from "next/link";
 import React, { FC, ReactNode } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/aevr/button";
 import Loader from "@/components/ui/aevr/loader";
 
 // Types for InfoBox

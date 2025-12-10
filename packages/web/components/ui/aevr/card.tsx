@@ -5,7 +5,7 @@ import { CloseCircle, MoreCircle } from "iconsax-react";
 import Link from "next/link";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/aevr/button";
 
 // Types
 export type CardVariant =

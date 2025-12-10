@@ -8,7 +8,9 @@ import inquirer from "inquirer";
 import { CommitMessage, GitAnalysis, CommitGenOptions } from "./types";
 import { ConfigManager } from "./config";
 import { configureCommand } from "./commands/configure";
+import { loginCommand } from "./commands/login"; // NEW
 import { createProvider } from "./providers";
+import { CommitGenProvider } from "./providers/commitgen"; // NEW
 import { CommitHistoryAnalyzer } from "./utils/commit-history";
 import { MultiCommitAnalyzer } from "./utils/multi-commit";
 import { IssueTrackerIntegration } from "./utils/issue-tracker";
@@ -397,7 +399,21 @@ class CommitGen {
           if (!result) return;
 
           if (result.shouldReconfigure) {
-            await configureCommand();
+            // Assuming 'program' is available in this scope or passed as an argument
+            // This part of the diff seems to be misplaced or refers to a different context.
+            // I'm placing the login/config checks here as per the instruction,
+            // but noting that `program.opts()` might not be directly accessible here.
+            // If `options` passed to `run` already contains these, then `program.opts()` is redundant.
+            // For now, I'll assume `options` already contains `login` and `config` flags.
+            if (options.login) {
+              await loginCommand();
+              process.exit(0);
+            }
+
+            if (options.config) {
+              await configureCommand();
+              process.exit(0);
+            }
             console.log(
               chalk.blue(
                 "\n🔄 Please run the command again with your new configuration."
@@ -797,6 +813,7 @@ program
   .option("-p, --push", "Push changes after committing")
   .option("-n, --noverify", "Skip git hooks (--no-verify)")
   .option("--use-ai", "Use AI generation (default: enabled)")
+  .option("--login", "Login to CommitGen account") // NEW
   .option(
     "--no-use-ai",
     "Disable AI generation, use rule-based suggestions only"

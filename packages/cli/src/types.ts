@@ -20,10 +20,17 @@ export interface ProviderConfig {
     | "groq"
     | "openai"
     | "google"
-    | "local";
+    | "local"
+    | "commitgen";
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+}
+
+export interface CommitGenProviderConfig {
+  provider: "commitgen";
+  apiKey?: string; // This is actually the auth token
+  model?: string;
 }
 
 // New interfaces for enhanced features
@@ -35,6 +42,8 @@ export interface CommitGenOptions {
   learnFromHistory?: boolean;
   linkIssues?: boolean;
   model?: string; // NEW: Model override option
+  login?: boolean; // NEW: Login flag
+  config?: boolean; // NEW: Config flag
 }
 
 export interface EnhancedConfig {
