@@ -1,4 +1,4 @@
-# CommitGen Monorepo
+# CommitGen
 
 This monorepo contains the CommitGen CLI tool and its web interface.
 
