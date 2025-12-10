@@ -73,12 +73,14 @@ export default function RootLayout({
         <NextTopLoader showSpinner={false} color="#4f39f6" />
 
         {/* Navbar */}
-        <header className="sticky top-0 z-50 w-full border-b border-neutral-100 bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/80">
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <header className="sticky top-0 px-4 z-50 w-full border-b border-neutral-100 bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/80">
+          <div className="mx-auto flex h-16 max-w-4xl items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-tight">
-                CommitGen
-              </span>
+              <Link href="/">
+                <span className="text-lg font-bold tracking-tight">
+                  CommitGen
+                </span>
+              </Link>
             </div>
             <nav className="hidden gap-6 sm:flex">
               <Link
@@ -102,7 +104,7 @@ export default function RootLayout({
           {children}
           {/* Footer */}
           <footer className="border-t border-neutral-100 bg-white py-12 dark:border-neutral-800 dark:bg-neutral-950">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
+            <div className="mx-auto flex max-w-4xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
               <p className="text-sm text-neutral-500 dark:text-neutral-500">
                 &copy; {new Date().getFullYear()} CommitGen. All rights
                 reserved.

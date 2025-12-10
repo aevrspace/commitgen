@@ -8,7 +8,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-6 py-24 text-center sm:py-32">
+        <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-8 px-6 py-24 text-center sm:py-32">
           <div className="inline-flex gap-2 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
             <MagicStar
               size="16"
@@ -43,7 +43,7 @@ export default function Home() {
 
         {/* Features Section */}
         <section className="border-t border-neutral-100 bg-neutral-50/50 py-24 dark:border-neutral-800 dark:bg-neutral-900/50">
-          <div className="mx-auto max-w-7xl px-6">
+          <div className="mx-auto max-w-4xl px-6">
             <div className="mb-16 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
                 Workflow Superpowers
