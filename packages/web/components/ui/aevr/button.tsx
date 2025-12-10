@@ -12,11 +12,11 @@ const buttonVariants = cva(
         default:
           "bg-slate-500 text-slate-50 hover:bg-slate-600 focus:ring-slate-500 dark:bg-slate-600 dark:hover:bg-slate-700 dark:focus:ring-slate-600",
         primary:
-          "bg-blue-500 text-blue-50 hover:bg-blue-600 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-600",
+          "bg-app-theme-500 text-app-theme-50 hover:bg-app-theme-600 focus:ring-app-theme-500 dark:bg-app-theme-600 dark:hover:bg-app-theme-700 dark:focus:ring-app-theme-600",
         secondary:
           "border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 focus:ring-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-gray-600",
         tertiary:
-          "bg-blue-100 text-blue-600 hover:bg-blue-200 focus:ring-blue-500 dark:bg-blue-800 dark:text-blue-200 dark:hover:bg-blue-700 dark:focus:ring-blue-600",
+          "bg-app-theme-100 text-app-theme-600 hover:bg-app-theme-200 focus:ring-app-theme-500 dark:bg-app-theme-800 dark:text-app-theme-200 dark:hover:bg-app-theme-700 dark:focus:ring-app-theme-600",
         ghost:
           "bg-transparent text-red-600 hover:bg-red-50 focus:ring-red-500 dark:text-red-400 dark:hover:bg-red-950/50 dark:focus:ring-red-600",
         danger:

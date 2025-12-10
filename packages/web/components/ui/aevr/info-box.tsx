@@ -88,7 +88,7 @@ const infoBoxVariants = cva(
         type: "info",
         colorScheme: "full",
         className:
-          "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100",
+          "bg-app-theme-50 dark:bg-app-theme-950 border-app-theme-200 dark:border-app-theme-800 text-app-theme-900 dark:text-app-theme-100",
       },
       {
         type: "loading",
@@ -119,7 +119,7 @@ const iconContainerVariants = cva("relative flex items-start justify-center", {
       warning: "bg-yellow-100 dark:bg-yellow-900/20",
       error: "bg-red-100 dark:bg-red-900/20",
       success: "bg-green-100 dark:bg-green-900/20",
-      info: "bg-blue-100 dark:bg-blue-900/20",
+      info: "bg-app-theme-100 dark:bg-app-theme-900/20",
       loading: "bg-gray-100 dark:bg-gray-800",
     },
     size: {
@@ -145,7 +145,7 @@ const iconVariants = cva("icon", {
       warning: "text-yellow-500",
       error: "text-red-500",
       success: "text-green-500",
-      info: "text-blue-500",
+      info: "text-app-theme-500",
       loading: "text-gray-500",
     },
     size: {

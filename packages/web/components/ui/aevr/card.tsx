@@ -50,7 +50,7 @@ const cardVariants = cva(
         default:
           "border-gray-100 bg-white text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200",
         primary:
-          "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+          "border-app-theme-200 bg-app-theme-50 text-app-theme-800 dark:border-app-theme-800 dark:bg-app-theme-950 dark:text-app-theme-200",
         secondary:
           "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200",
         success:
@@ -59,7 +59,7 @@ const cardVariants = cva(
           "border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200",
         error:
           "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
-        info: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+        info: "border-app-theme-200 bg-app-theme-50 text-app-theme-800 dark:border-app-theme-800 dark:bg-app-theme-950 dark:text-app-theme-200",
         glass:
           "border-white/20 bg-white/10 text-gray-800 backdrop-blur-xl dark:border-gray-700/50 dark:bg-gray-900/10 dark:text-gray-200",
       },
@@ -176,7 +176,8 @@ const cardIconVariants = cva("flex items-center justify-center rounded-2xl", {
   variants: {
     variant: {
       default: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-      primary: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
+      primary:
+        "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
       secondary:
         "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
       success:
@@ -184,7 +185,7 @@ const cardIconVariants = cva("flex items-center justify-center rounded-2xl", {
       warning:
         "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400",
       error: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
-      info: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
+      info: "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
       glass: "bg-white/20 text-gray-600 dark:bg-gray-700/20 dark:text-gray-400",
     },
     size: {
@@ -259,7 +260,7 @@ const cardMediaVariants = cva("overflow-hidden", {
 
 // CVA variants for progress bar
 const progressBarVariants = cva(
-  "absolute left-0 h-1 bg-blue-500 transition-all duration-300",
+  "absolute left-0 h-1 bg-app-theme-500 transition-all duration-300",
   {
     variants: {
       position: {
@@ -286,7 +287,7 @@ const notificationVariants = cva(
     variants: {
       variant: {
         default: "bg-red-500",
-        primary: "bg-blue-500",
+        primary: "bg-app-theme-500",
         success: "bg-green-500",
         warning: "bg-yellow-500",
       },
@@ -587,7 +588,11 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
                 className="h-8 w-8 p-0"
                 aria-label="More options"
               >
-                <MoreCircle className="h-4 w-4" />
+                <MoreCircle
+                  className="icon"
+                  color="currentColor"
+                  variant="Bulk"
+                />
               </Button>
             )}
             {onClose && (
@@ -598,7 +603,11 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
                 className="h-8 w-8 p-0"
                 aria-label="Close"
               >
-                <CloseCircle className="h-4 w-4" />
+                <CloseCircle
+                  className="icon"
+                  color="currentColor"
+                  variant="Bulk"
+                />
               </Button>
             )}
           </div>
@@ -702,7 +711,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 opacity-100">
             <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium dark:bg-gray-800">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-app-theme-500 border-t-transparent"></div>
               Loading...
             </div>
           </div>
@@ -718,7 +727,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-3xl"
+            className="block focus:outline-none focus:ring-2 focus:ring-app-theme-500 focus:ring-offset-2 rounded-3xl"
           >
             {cardContent}
           </a>
@@ -727,7 +736,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         return (
           <Link
             href={href}
-            className="block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-3xl"
+            className="block focus:outline-none focus:ring-2 focus:ring-app-theme-500 focus:ring-offset-2 rounded-3xl"
           >
             {cardContent}
           </Link>

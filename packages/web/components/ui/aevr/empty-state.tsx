@@ -22,7 +22,7 @@ const emptyStateVariants = cva(
         default:
           "border border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50",
         primary:
-          "border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/50",
+          "border border-app-theme-200 bg-app-theme-50/50 dark:border-app-theme-800 dark:bg-app-theme-950/50",
         secondary:
           "border border-gray-200 bg-gray-100/50 dark:border-gray-700 dark:bg-gray-800/50",
         success:
@@ -31,7 +31,7 @@ const emptyStateVariants = cva(
           "border border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/50",
         error:
           "border border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/50",
-        info: "border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/50",
+        info: "border border-app-theme-200 bg-app-theme-50/50 dark:border-app-theme-800 dark:bg-app-theme-950/50",
         ghost: "border-0 bg-transparent",
       },
       size: {
@@ -72,7 +72,7 @@ const iconContainerVariants = cva(
         default:
           "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
         primary:
-          "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
+          "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
         secondary:
           "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
         success:
@@ -80,7 +80,7 @@ const iconContainerVariants = cva(
         warning:
           "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400",
         error: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
-        info: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
+        info: "bg-app-theme-100 text-app-theme-600 dark:bg-app-theme-900 dark:text-app-theme-400",
         ghost:
           "bg-gray-100/50 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400",
       },
@@ -103,12 +103,12 @@ const titleVariants = cva("font-semibold", {
   variants: {
     variant: {
       default: "text-gray-900 dark:text-gray-100",
-      primary: "text-blue-900 dark:text-blue-100",
+      primary: "text-app-theme-900 dark:text-app-theme-100",
       secondary: "text-gray-900 dark:text-gray-100",
       success: "text-green-900 dark:text-green-100",
       warning: "text-yellow-900 dark:text-yellow-100",
       error: "text-red-900 dark:text-red-100",
-      info: "text-blue-900 dark:text-blue-100",
+      info: "text-app-theme-900 dark:text-app-theme-100",
       ghost: "text-gray-900 dark:text-gray-100",
     },
     size: {

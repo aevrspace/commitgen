@@ -23,7 +23,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       className="w-full max-w-md"
       variant="default"
       elevation="raised"
-      icon={<Sms variant="Bold" className="text-blue-500" />}
+      icon={
+        <Sms
+          variant="Bulk"
+          color="currentColor"
+          className="text-app-theme-500 icon"
+        />
+      }
     >
       <Formik
         initialValues={{ email: "" }}
@@ -63,7 +69,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                 className={`w-full rounded-xl border bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white ${
                   errors.email && touched.email
                     ? "border-red-500 focus:ring-red-500/20"
-                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 dark:border-gray-700"
+                    : "border-gray-200 focus:border-app-theme-500 focus:ring-app-theme-500/20 dark:border-gray-700"
                 }`}
                 placeholder="you@example.com"
               />

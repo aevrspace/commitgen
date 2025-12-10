@@ -30,7 +30,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           Dashboard
         </h1>
         <Button onClick={onLogout} variant="danger" size="sm" className="gap-2">
-          <LogoutCurve variant="Bold" className="w-4 h-4" />
+          <LogoutCurve variant="Bulk" color="currentColor" className="icon" />
           Logout
         </Button>
       </div>
@@ -57,7 +57,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <Card
         title="Authentication Token"
         subtitle="Use this token to authenticate the CLI"
-        icon={<Key variant="Bold" className="text-purple-500" />}
+        icon={<Key variant="Bulk" color="currentColor" className="icon" />}
         variant="default"
         elevation="flat"
         className="w-full"
@@ -73,7 +73,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="absolute right-2 top-2 h-8 w-8 p-0"
             title="Copy to clipboard"
           >
-            <Copy size={16} />
+            <Copy variant="Bulk" color="currentColor" className="icon" />
           </Button>
         </div>
         <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">

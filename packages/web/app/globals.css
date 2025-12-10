@@ -41,6 +41,30 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-theme-50: var(--color-indigo-50);
+  --color-theme-100: var(--color-indigo-100);
+  --color-theme-200: var(--color-indigo-200);
+  --color-theme-300: var(--color-indigo-300);
+  --color-theme-400: var(--color-indigo-400);
+  --color-theme-500: var(--color-indigo-500);
+  --color-theme-600: var(--color-indigo-600);
+  --color-theme-700: var(--color-indigo-700);
+  --color-theme-800: var(--color-indigo-800);
+  --color-theme-900: var(--color-indigo-900);
+  --color-theme-950: var(--color-indigo-950);
+
+  --color-app-theme-50: var(--color-theme-50);
+  --color-app-theme-100: var(--color-theme-100);
+  --color-app-theme-200: var(--color-theme-200);
+  --color-app-theme-300: var(--color-theme-300);
+  --color-app-theme-400: var(--color-theme-400);
+  --color-app-theme-500: var(--color-theme-500);
+  --color-app-theme-600: var(--color-theme-600);
+  --color-app-theme-700: var(--color-theme-700);
+  --color-app-theme-800: var(--color-theme-800);
+  --color-app-theme-900: var(--color-theme-900);
+  --color-app-theme-950: var(--color-theme-950);
 }
 
 :root {
@@ -119,4 +143,11 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .icon {
+    @apply shrink-0 w-6 h-6;
+  }
+}
+
+@layer utilities {
 }

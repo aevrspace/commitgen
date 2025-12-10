@@ -29,10 +29,26 @@ export async function POST(req: NextRequest) {
 
     // Send email
     const emailService = new EmailService("resend"); // Use Resend as requested
+
+    // Generate styled email template
+    const htmlBody = emailService.generateMinimalistTemplate({
+      title: "Your Login Code",
+      content: `
+        <p>Your login code for CommitGen is:</p>
+        <div style="font-size: 32px; font-weight: bold; margin: 24px 0; letter-spacing: 4px; color: #333333;">${code}</div>
+        <p>This code expires in 15 minutes.</p>
+        <p style="color: #666666; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
+      `,
+      buttonText: "Go to Dashboard",
+      buttonUrl: `${
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/dashboard`,
+    });
+
     const result = await emailService.sendEmail({
       to: { email },
-      subject: "Your Login Code",
-      htmlBody: `<p>Your login code for CommitGen is: <strong>${code}</strong></p><p>This code expires in 15 minutes.</p>`,
+      subject: "Your Login Code - CommitGen",
+      htmlBody,
       textBody: `Your login code for CommitGen is: ${code}`,
     });
 
