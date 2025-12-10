@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LoginForm } from "./_components/LoginForm";
 import { VerifyForm } from "./_components/VerifyForm";
 import { DashboardView } from "./_components/DashboardView";
@@ -25,11 +25,9 @@ export default function Dashboard() {
   } = usePersistedState<string>("", { storageKey: "authToken" });
 
   // Handle initial hydration and token check
-  useEffect(() => {
-    if (isHydrated && token && step === "login") {
-      setStep("dashboard");
-    }
-  }, [isHydrated, token, step]);
+  // Derive the current step based on authentication state
+  // If we have a valid token (and are hydrated), we should show the dashboard
+  const currentStep = token ? "dashboard" : step;
 
   const handleLoginSuccess = (email: string) => {
     setEmail(email);
@@ -60,13 +58,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 dark:bg-gray-950 md:p-8">
       <div className="mx-auto max-w-4xl">
-        {step === "login" && (
+        {currentStep === "login" && (
           <div className="flex min-h-[80vh] items-center justify-center">
             <LoginForm onSuccess={handleLoginSuccess} />
           </div>
         )}
 
-        {step === "verify" && (
+        {currentStep === "verify" && (
           <div className="flex min-h-[80vh] items-center justify-center">
             <VerifyForm
               email={email}
@@ -76,7 +74,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {step === "dashboard" && (
+        {currentStep === "dashboard" && (
           <DashboardView
             user={profile}
             token={token || ""}
