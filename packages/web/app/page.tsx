@@ -135,13 +135,13 @@ export default function Home() {
               GitHub
             </Link>
             <Link
-              href="#"
+              href="/privacy"
               className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
             >
               Privacy
             </Link>
             <Link
-              href="#"
+              href="/terms"
               className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
             >
               Terms
