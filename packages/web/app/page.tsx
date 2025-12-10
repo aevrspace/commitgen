@@ -6,31 +6,6 @@ import { Command, Cpu, MagicStar } from "iconsax-react";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-100 bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/80">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-tight">CommitGen</span>
-          </div>
-          <nav className="hidden gap-6 sm:flex">
-            <Link
-              href="https://github.com/aevrhq/commitgen"
-              className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-              target="_blank"
-            >
-              GitHub
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="primary" size="sm">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-6 py-24 text-center sm:py-32">
@@ -120,35 +95,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-neutral-100 bg-white py-12 dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
-          <p className="text-sm text-neutral-500 dark:text-neutral-500">
-            &copy; {new Date().getFullYear()} CommitGen. All rights reserved.
-          </p>
-          <div className="flex gap-6">
-            <Link
-              href="https://github.com/aevrhq/commitgen"
-              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              GitHub
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/terms"
-              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              Terms
-            </Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
