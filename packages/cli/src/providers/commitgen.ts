@@ -12,7 +12,8 @@ export class CommitGenProvider implements AIProvider {
     // We can infer this from env or config.
     // For now we'll assume the user is running the web app locally as per instructions
     this.apiUrl =
-      process.env.COMMITGEN_API_URL || "http://localhost:3000/api/commit";
+      process.env.COMMITGEN_API_URL ||
+      "https://commitgen.aevr.space/api/commit";
   }
 
   async generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]> {
