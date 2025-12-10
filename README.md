@@ -25,8 +25,8 @@ CommitGen is a powerful developer tool that leverages AI to generate conventiona
 
 This project is a monorepo managed with **TurboRepo**.
 
-- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Shadcn/UI
-- **Backend**: Next.js API Routes, PostgreSQL, Prisma
+- **Frontend**: Next.js 16 (App Router), React 19, TailwindCSS 4, Shadcn/UI
+- **Backend**: Next.js API Routes, MongoDB, Mongoose
 - **CLI**: Node.js, Commander
 - **State Management**: Zustand (with persistence)
 - **Deployment**: Vercel (Web), NPM (CLI)
@@ -49,7 +49,7 @@ commitgen/
 
 - Node.js > 18
 - NPM or PNPM
-- PostgreSQL Database (for Web)
+- MongoDB Database (for Web)
 
 ### Installation
 
