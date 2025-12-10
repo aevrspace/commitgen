@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LoginForm } from "./_components/LoginForm";
 import { VerifyForm } from "./_components/VerifyForm";
 import { DashboardView } from "./_components/DashboardView";
@@ -39,6 +39,33 @@ export default function Dashboard() {
     setProfile(user);
     setStep("dashboard");
   };
+
+  // Fetch user profile if token exists but profile is missing (e.g., after refresh)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (token && !profile && isHydrated) {
+        try {
+          const res = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            setProfile(data);
+          } else {
+            // Token invalid or expired
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Failed to fetch profile:", error);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [token, profile, isHydrated]);
 
   const handleLogout = () => {
     resetState(); // Clear token and remove from storage
