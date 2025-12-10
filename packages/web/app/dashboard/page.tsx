@@ -40,6 +40,12 @@ export default function Dashboard() {
     setStep("dashboard");
   };
 
+  const handleLogout = () => {
+    resetState(); // Clear token and remove from storage
+    setProfile(null);
+    setStep("login");
+  };
+
   // Fetch user profile if token exists but profile is missing (e.g., after refresh)
   useEffect(() => {
     const fetchProfile = async () => {
@@ -66,12 +72,6 @@ export default function Dashboard() {
 
     fetchProfile();
   }, [token, profile, isHydrated]);
-
-  const handleLogout = () => {
-    resetState(); // Clear token and remove from storage
-    setProfile(null);
-    setStep("login");
-  };
 
   // Show loading state while checking for persisted token
   if (!isHydrated) {
