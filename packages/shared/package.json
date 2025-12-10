@@ -1,0 +1,16 @@
+{
+  "name": "@untools/commitgen-shared",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Shared utilities and types for CommitGen packages",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

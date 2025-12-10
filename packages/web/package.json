@@ -1,0 +1,14 @@
+{
+  "name": "@untools/commitgen-web",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Web interface and landing page for CommitGen",
+  "scripts": {
+    "dev": "echo 'Web package not initialized yet. Run: cd packages/web && npx shadcn@latest init'",
+    "build": "echo 'Web package not initialized yet'",
+    "start": "echo 'Web package not initialized yet'",
+    "lint": "echo 'Web package not initialized yet'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

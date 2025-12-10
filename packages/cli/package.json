@@ -1,0 +1,70 @@
+{
+  "name": "@untools/commitgen",
+  "version": "0.3.0",
+  "description": "CLI to create generate commit messages",
+  "main": "dist/index.js",
+  "bin": {
+    "commitgen": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "prepublishOnly": "npm run build",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "conventional-commits",
+    "ai",
+    "cli",
+    "typescript",
+    "commitizen",
+    "gemini",
+    "openai"
+  ],
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Miracle Onyenma",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aevrHQ/commitgen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aevrHQ/commitgen/issues"
+  },
+  "homepage": "https://github.com/aevrHQ/commitgen#readme",
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.26",
+    "@untools/port-gen": "^0.0.2",
+    "ai": "^5.0.86",
+    "chalk": "^4.1.2",
+    "commander": "^13.1.0",
+    "degit": "^2.8.4",
+    "inquirer": "^12.5.2"
+  },
+  "devDependencies": {
+    "@types/chalk": "^0.4.31",
+    "@types/degit": "^2.8.6",
+    "@types/inquirer": "^9.0.7",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.14.0",
+    "jest": "^29.7.0",
+    "standard-version": "^9.5.0",
+    "ts-jest": "^29.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
