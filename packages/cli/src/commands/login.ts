@@ -3,8 +3,7 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 
 // Default API URL (should match the one in provider/commitgen.ts)
-const API_URL =
-  process.env.COMMITGEN_API_URL || "http://localhost:3000/api/auth";
+const API_URL = process.env.COMMITGEN_API_URL || "https://commitgen.aevr.space";
 
 export async function loginCommand(): Promise<void> {
   console.log(chalk.cyan("\n🔑 Login to CommitGen"));
@@ -25,7 +24,7 @@ export async function loginCommand(): Promise<void> {
   try {
     // 2. Request code
     console.log(chalk.gray("\nSending verification code..."));
-    const loginRes = await fetch(`${API_URL}/login`, {
+    const loginRes = await fetch(`${API_URL}/api/auth/login`, {
       method: "POST",
       body: JSON.stringify({ email }),
       headers: { "Content-Type": "application/json" },
@@ -53,7 +52,7 @@ export async function loginCommand(): Promise<void> {
 
     // 4. Verify code
     console.log(chalk.gray("Verifying..."));
-    const verifyRes = await fetch(`${API_URL}/verify`, {
+    const verifyRes = await fetch(`${API_URL}/api/auth/verify`, {
       method: "POST",
       body: JSON.stringify({ email, code }),
       headers: { "Content-Type": "application/json" },
