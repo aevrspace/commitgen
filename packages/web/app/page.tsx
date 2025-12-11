@@ -172,7 +172,13 @@ export default function Home() {
                 </h3>
                 <p className="text-neutral-600 dark:text-neutral-400 mb-6">
                   Connect your own Google Gemini API key for unlimited
-                  controlled usage.
+                  controlled usage.{" "}
+                  <Link
+                    href="/docs/api-key"
+                    className="text-blue-500 hover:underline inline-flex items-center gap-1"
+                  >
+                    Learn how <span aria-hidden="true">&rarr;</span>
+                  </Link>
                 </p>
                 <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                   <li className="flex items-center gap-2">
