@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.3](https://github.com/aevrHQ/commitgen/compare/v0.3.2...v0.3.3) (2025-12-11)
+
+
+### Features
+
+* update default API endpoint to production and add CLI release scripts ([412aadf](https://github.com/aevrHQ/commitgen/commit/412aadfdfe88deb29faf0e7a20792c198180df10))
+
 ### [0.3.2](https://github.com/aevrHQ/commitgen/compare/v0.3.1...v0.3.2) (2025-12-11)
 
 
