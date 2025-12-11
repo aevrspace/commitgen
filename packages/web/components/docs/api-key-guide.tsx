@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/aevr/button";
 import { Card } from "@/components/ui/aevr/card";
 import { ArrowLeft, SecuritySafe, Warning2, Flash, Key } from "iconsax-react";
+import { InfoBox } from "../ui/aevr/info-box";
 
 export const ApiKeyGuide = () => {
   return (
@@ -117,64 +118,58 @@ export const ApiKeyGuide = () => {
         </Card>
 
         {/* Security Warning */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-900/30 dark:bg-amber-900/10">
-          <div className="flex items-start gap-4">
-            <div className="rounded-full bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
-              <SecuritySafe
-                color="currentColor"
-                variant="Bulk"
-                className="icon"
-                size={24}
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200">
-                Security Best Practices
-              </h3>
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-amber-800 dark:text-amber-400">
-                <li>
-                  <strong>Never share your API key.</strong> Do not post it on
-                  public forums or commit it to GitHub.
-                </li>
-                <li>
-                  <strong>Use Environment Variables.</strong> Store it in a{" "}
-                  <code>.env</code> file or use <code>commitgen config</code>{" "}
-                  securely.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <InfoBox
+          type="warning"
+          title="Security Best Practices"
+          colorScheme={"full"}
+          icon={
+            <SecuritySafe
+              size={24}
+              variant="Bulk"
+              className="icon"
+              color="currentColor"
+            />
+          }
+        >
+          <ul className="list-disc space-y-1 pl-4">
+            <li>
+              <strong>Never share your API key.</strong> Do not post it on
+              public forums or commit it to GitHub.
+            </li>
+            <li>
+              <strong>Use Environment Variables.</strong> Store it in a{" "}
+              <code>.env</code> file or use <code>commitgen config</code>{" "}
+              securely.
+            </li>
+          </ul>
+        </InfoBox>
 
         {/* Troubleshooting */}
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-900/50">
-          <div className="flex items-start gap-4">
-            <div className="rounded-full bg-neutral-200 p-2 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-              <Warning2
-                color="currentColor"
-                variant="Bulk"
-                className="icon"
-                size={24}
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-200">
-                Troubleshooting
-              </h3>
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-600 dark:text-neutral-400">
-                <li>
-                  <strong>Quota Exceeded:</strong> The free tier is generous (15
-                  RPM), but if you hit limits, wait a moment or check your
-                  billing settings.
-                </li>
-                <li>
-                  <strong>Region Lock:</strong> Ensure you are in a supported
-                  region for Google AI Studio.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <InfoBox
+          type="default"
+          colorScheme={"full"}
+          title="Troubleshooting"
+          icon={
+            <Warning2
+              size={24}
+              variant="Bulk"
+              className="icon"
+              color="currentColor"
+            />
+          }
+        >
+          <ul className="list-disc space-y-1 pl-4">
+            <li>
+              <strong>Quota Exceeded:</strong> The free tier is generous (15
+              RPM), but if you hit limits, wait a moment or check your billing
+              settings.
+            </li>
+            <li>
+              <strong>Region Lock:</strong> Ensure you are in a supported region
+              for Google AI Studio.
+            </li>
+          </ul>
+        </InfoBox>
       </div>
     </div>
   );
