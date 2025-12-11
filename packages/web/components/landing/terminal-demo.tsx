@@ -232,7 +232,7 @@ export const TerminalDemo = () => {
       </div>
 
       {/* Terminal Body */}
-      <div className="h-[360px] overflow-y-auto p-4 font-mono text-sm leading-relaxed text-neutral-300 scrollbar-none">
+      <div className="h-[360px] overflow-y-auto p-4 font-mono text-sm leading-relaxed text-neutral-300 scrollbar-none text-left">
         <TerminalAnimation
           key={activeTab}
           command={currentTab.command}
