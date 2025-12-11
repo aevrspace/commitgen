@@ -1,45 +1,49 @@
-// ./packages/web/app/page.tsx
-
 import Link from "next/link";
 import { Button } from "@/components/ui/aevr/button";
 import { Card, CardGrid } from "@/components/ui/aevr/card";
 import { Command, Cpu, MagicStar } from "iconsax-react";
+import { TerminalDemo } from "@/components/landing/terminal-demo";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-8 px-6 py-24 text-center sm:py-32">
-          <div className="inline-flex gap-2 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-            <MagicStar
-              size="16"
-              className="text-amber-500"
-              variant="Bulk"
-              color="currentColor"
-            />
-            <span>AI-Powered Conventional Commits</span>
+        <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-12 px-6 py-24 text-center sm:py-32">
+          <div className="flex flex-col items-center gap-6">
+            <div className="inline-flex gap-2 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
+              <MagicStar
+                size="16"
+                className="text-amber-500"
+                variant="Bulk"
+                color="currentColor"
+              />
+              <span>AI-Powered Conventional Commits</span>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-6xl">
+              Stop writing generic{" "}
+              <span className="text-neutral-500">commit messages.</span>
+            </h1>
+            <p className="max-w-2xl text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Generate meaningful, conventional commit messages from your git
+              diffs in seconds. CLI tool and web dashboard included.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Link href="/dashboard">
+                <Button variant="primary" size="lg" className="px-8">
+                  Generate a Commit
+                </Button>
+              </Link>
+              <Link href="https://github.com/aevrhq/commitgen" target="_blank">
+                <Button variant="secondary" size="lg" className="px-8">
+                  View Documentation
+                </Button>
+              </Link>
+            </div>
           </div>
-          <h1 className="max-w-4xl text-5xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-6xl sm:leading-tight">
-            Stop writing generic <br className="hidden sm:inline" /> commit
-            messages.
-          </h1>
-          <p className="max-w-2xl text-lg text-neutral-600 dark:text-neutral-400">
-            CommitGen analyzes your staged changes and generates semantic,
-            conventional commit messages instantly. Use it via our CLI or this
-            Web Dashboard.
-          </p>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <Link href="/dashboard">
-              <Button size="lg" className="px-8">
-                Generate a Commit
-              </Button>
-            </Link>
-            <Link href="https://github.com/aevrhq/commitgen" target="_blank">
-              <Button variant="secondary" size="lg" className="px-8">
-                View Documentation
-              </Button>
-            </Link>
+
+          <div className="w-full">
+            <TerminalDemo />
           </div>
         </section>
 
