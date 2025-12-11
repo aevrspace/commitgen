@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         <p>Your login code for CommitGen is:</p>
         <div style="font-size: 32px; font-weight: bold; margin: 24px 0; letter-spacing: 4px; color: #333333;">${code}</div>
         <p>This code expires in 15 minutes.</p>
-        <p style="color: #666666; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
+        <p style="color: #777; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
       `,
       buttonText: "Go to Dashboard",
       buttonUrl: `${
