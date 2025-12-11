@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/aevrHQ/commitgen/compare/v0.3.1...v0.3.2) (2025-12-11)
+
+
+### Features
+
+* **cli:** Update API URLs to use http://localhost:3000 by default. ([78f4545](https://github.com/aevrHQ/commitgen/commit/78f4545850e720f88673625684d194ccbb0e070e))
+
+
+### Chores
+
+* **route:** Updated email notice color in login code email. ([9f502c1](https://github.com/aevrHQ/commitgen/commit/9f502c1427f24f6db3991727c6848919a554d990))
+
 ### [0.3.1](https://github.com/aevrHQ/commitgen/compare/v0.3.0...v0.3.1) (2025-12-10)
 
 
