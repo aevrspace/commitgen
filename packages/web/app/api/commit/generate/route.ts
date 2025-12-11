@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const authToken = await AuthToken.findOne({
       token,
       expiresAt: { $gt: new Date() },
-    }).populate("userId");
+    }).populate({ path: "userId", model: User });
 
     if (!authToken) {
       return NextResponse.json(
