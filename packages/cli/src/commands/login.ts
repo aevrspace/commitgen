@@ -3,7 +3,7 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 
 // Default API URL (should match the one in provider/commitgen.ts)
-const API_URL = process.env.COMMITGEN_API_URL || "http://localhost:3000";
+const API_URL = process.env.COMMITGEN_API_URL || "https://commitgen.aevr.space";
 
 export async function loginCommand(): Promise<void> {
   console.log(chalk.cyan("\n🔑 Login to CommitGen"));

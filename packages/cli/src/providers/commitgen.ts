@@ -11,7 +11,8 @@ export class CommitGenProvider implements AIProvider {
     // Default to localhost for dev, but in prod this should be the deployed URL
     // We can infer this from env or config.
     // For now we'll assume the user is running the web app locally as per instructions
-    this.apiUrl = process.env.COMMITGEN_API_URL || "http://localhost:3000";
+    this.apiUrl =
+      process.env.COMMITGEN_API_URL || "https://commitgen.aevr.space";
   }
 
   async generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]> {
