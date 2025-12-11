@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.4](https://github.com/aevrHQ/commitgen/compare/v0.3.3...v0.3.4) (2025-12-11)
+
+
+### Features
+
+* Add `commitgen` as the default provider option and integrate a login flow for authentication. ([06c1404](https://github.com/aevrHQ/commitgen/commit/06c1404b70a6208a93d0bd74ad37ae0049ba5246))
+* add interactive terminal demo component to the landing page. ([e161676](https://github.com/aevrHQ/commitgen/commit/e161676915b3e5bc7b25aeaeac312d6af42a07c3))
+* left align text within the terminal demo body ([b85f44f](https://github.com/aevrHQ/commitgen/commit/b85f44fccc840de2fb4717eff8bf9ab2d6e86818))
+
+
+### Bug Fixes
+
+* explicitly specify User model for userId population. ([339808e](https://github.com/aevrHQ/commitgen/commit/339808e58bc4894ec69d7d41b23b81dd7a24fabd))
+
 ### [0.3.3](https://github.com/aevrHQ/commitgen/compare/v0.3.2...v0.3.3) (2025-12-11)
 
 
