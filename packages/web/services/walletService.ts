@@ -2,6 +2,7 @@ import { WalletTransaction } from "@/models/WalletTransaction";
 import { CreditUsage } from "@/models/CreditUsage";
 import { nanoid } from "nanoid";
 import { logger } from "@untools/logger";
+import mongoose from "mongoose";
 
 interface UsageMetadata {
   model?: string;
@@ -44,10 +45,13 @@ class WalletService {
    */
   async getBalance(userId: string): Promise<number> {
     try {
+      // Convert string to ObjectId for proper MongoDB comparison
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+
       const result = await WalletTransaction.aggregate([
         {
           $match: {
-            userId: { $eq: userId },
+            userId: userObjectId,
             status: "confirmed",
           },
         },

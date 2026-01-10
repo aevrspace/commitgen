@@ -4,6 +4,7 @@ import User from "@/models/User";
 import AuthToken from "@/models/AuthToken";
 import { createProvider } from "@untools/ai-toolkit";
 import { createWalletService } from "@/services/walletService";
+import { processDiff } from "@/utils/diff/processor";
 import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
@@ -37,11 +38,14 @@ export async function POST(req: NextRequest) {
     const user: any = authToken.userId;
     const walletService = createWalletService();
 
-    // Check balance using wallet service
-    const hasCredits = await walletService.hasBalance(user._id.toString(), 1);
-    if (!hasCredits) {
+    // Check balance using wallet service + legacy credits
+    const walletBalance = await walletService.getBalance(user._id.toString());
+    const legacyCredits = user.credits || 0;
+    const totalCredits = walletBalance + legacyCredits;
+
+    if (totalCredits < 1) {
       return NextResponse.json(
-        { error: "Insufficient credits" },
+        { error: "Insufficient credits", credits: totalCredits },
         { status: 403 }
       );
     }
@@ -51,6 +55,9 @@ export async function POST(req: NextRequest) {
     if (!diff) {
       return NextResponse.json({ error: "Diff is required" }, { status: 400 });
     }
+
+    // Process diff if too large
+    const processed = processDiff(diff);
 
     // Initialize AI Provider
     const provider = createProvider({
@@ -67,11 +74,15 @@ Format: <type>(<scope>): <subject>
 <BLANK LINE>
 <footer>
 
-Only return the commit message, nothing else.`;
+Only return the commit message, nothing else.${
+      processed.stats.isTruncated
+        ? `\n\nNote: This diff was summarized from ${processed.stats.originalLength} chars to ${processed.stats.processedLength} chars. It affects ${processed.stats.totalFiles} files with +${processed.stats.additions}/-${processed.stats.deletions} changes.`
+        : ""
+    }`;
 
     const result = await provider.generateText({
       system: systemPrompt,
-      messages: [{ role: "user", content: diff }],
+      messages: [{ role: "user", content: processed.content }],
     });
 
     if (!result.text) {
