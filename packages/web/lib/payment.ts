@@ -20,7 +20,7 @@ export async function initializePaystackPayment(
         email,
         amount: Math.ceil(amount * 100), // Convert to kobo
         reference,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/credits`,
+        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/callback`,
       }),
     }
   );
