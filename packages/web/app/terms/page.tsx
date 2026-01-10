@@ -52,9 +52,9 @@ const TermsPage = async () => {
   return (
     <main>
       <section className="site-section">
-        <div className="wrapper !max-w-4xl">
+        <div className="wrapper max-w-4xl!">
           <div
-            className="prose dark:prose-invert !max-w-none"
+            className="prose dark:prose-invert max-w-none!"
             dangerouslySetInnerHTML={{ __html: content }}
           />
         </div>

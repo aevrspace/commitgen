@@ -9,6 +9,7 @@ import { CommitMessage, GitAnalysis, CommitGenOptions } from "./types";
 import { ConfigManager } from "./config";
 import { configureCommand } from "./commands/configure";
 import { loginCommand } from "./commands/login"; // NEW
+import { buyCreditsCommand } from "./commands/buy-credits"; // NEW
 import { createProvider } from "./providers";
 import { CommitGenProvider } from "./providers/commitgen"; // NEW
 import { CommitHistoryAnalyzer } from "./utils/commit-history";
@@ -845,6 +846,11 @@ program
   .command("config")
   .description("Configure AI provider and settings")
   .action(configureCommand);
+
+program
+  .command("buy-credits")
+  .description("Buy credits for CommitGen")
+  .action(buyCreditsCommand);
 
 program
   .command("show-config")
