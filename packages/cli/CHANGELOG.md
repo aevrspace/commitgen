@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/aevrHQ/commitgen/compare/v0.3.4...v0.4.0) (2026-01-10)
+
+
+### Features
+
+* add configuration section to the landing page detailing free starter and BYOK API key options. ([f850240](https://github.com/aevrHQ/commitgen/commit/f850240824fd4f7127815de9f8c8e8de94430356))
+* add documentation and guide for obtaining a Google AI API key. ([8639606](https://github.com/aevrHQ/commitgen/commit/8639606116c9134c88d481b1fd680ae396a3162c))
+* **api,wallet:** Add diff processing and improve credit validation ([4f4442f](https://github.com/aevrHQ/commitgen/commit/4f4442fe753d08120fe1e1d1a4c7e7ef3b6ebba1))
+* **currency:** Add multi-currency support with exchange rates and formatting ([6b3a301](https://github.com/aevrHQ/commitgen/commit/6b3a30199e44f979b1b26fb9c8d9ede73b665972))
+* **header:** Add user menu dropdown with authentication state ([9525a93](https://github.com/aevrHQ/commitgen/commit/9525a93ecf7a93f28bc21c3bf37dbe35803ec58e))
+* **models:** Add credits calculator and adjust wallet service to handle tiered pricing. ([d25f8ec](https://github.com/aevrHQ/commitgen/commit/d25f8ecc8854a3c103f3470637f72dbe0a90d564))
+* **payment:** implement dynamic currency rates and Paystack fee calculation ([0df0ad1](https://github.com/aevrHQ/commitgen/commit/0df0ad1e7dbc22d9fcc5b1b2141f3139b25edf30))
+* **payment:** Integrate Paystack and 100Pay payment gateways with wallet system ([0545746](https://github.com/aevrHQ/commitgen/commit/0545746a54635ad7bba3fa66d3e3ed674163c4c5))
+* **transactions:** Add transaction history and webhook event logging ([435b393](https://github.com/aevrHQ/commitgen/commit/435b3938ff15218727192032a1122b736bf5c8eb))
+* **wallet,dashboard:** Add wallet service and user statistics dashboard ([1ee05b9](https://github.com/aevrHQ/commitgen/commit/1ee05b9a38e037ca4cd2cbffe2aaa65f7fee30b7))
+* **webhook,currency:** Add processing status and improve parameter handling ([681b9bc](https://github.com/aevrHQ/commitgen/commit/681b9bce15fd45bd5073a41bf7301dd3aebf2b86))
+* **web:** Replace security warning and troubleshooting sections with InfoBox component. ([773397f](https://github.com/aevrHQ/commitgen/commit/773397f95be643bb6ce3079f7c2e6e1669c4fbc4))
+
+
+### Bug Fixes
+
+* **webhooks,payment:** Make webhook event logging non-blocking and improve error handling ([f123953](https://github.com/aevrHQ/commitgen/commit/f12395342160d938cb56a35396775263e2c30c57))
+
+
+### Code Refactoring
+
+* **currency:** optimize useCurrency hook with destructured store values ([1335865](https://github.com/aevrHQ/commitgen/commit/1335865b82963ed2f3a0a3f4cae253af3f923136))
+* **webhooks:** Extract webhook event logging into dedicated service ([9f19401](https://github.com/aevrHQ/commitgen/commit/9f19401e2b537cfe9e7a29dd146a8edc7a76cfcd))
+
 ### [0.3.4](https://github.com/aevrHQ/commitgen/compare/v0.3.3...v0.3.4) (2025-12-11)
 
 
