@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import Token from "@/models/Token";
 import User from "@/models/User";
@@ -55,6 +56,14 @@ export async function POST(req: NextRequest) {
 
     // Delete used verification token
     await Token.deleteOne({ _id: tokenRecord._id });
+
+    // Set HttpOnly cookie
+    (await cookies()).set("authToken", tokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 90, // 3 months
+      path: "/",
+    });
 
     return NextResponse.json({
       success: true,

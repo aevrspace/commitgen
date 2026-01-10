@@ -115,7 +115,7 @@ export default function Home() {
             </div>
 
             <div className="bg-neutral-900 rounded-xl p-8 mb-12 shadow-2xl overflow-hidden relative group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-blue-500" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-blue-500" />
               <div className="font-mono text-sm text-neutral-400 mb-2 select-none">
                 $ Configure your provider
               </div>

@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import AuthToken from "@/models/AuthToken";
 import User from "@/models/User";
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let token = req.headers.get("authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      const cookieStore = await cookies();
+      token = cookieStore.get("authToken")?.value;
     }
 
-    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     await dbConnect();
 
@@ -32,6 +37,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
+      id: user._id,
       email: user.email,
       credits: user.credits,
     });

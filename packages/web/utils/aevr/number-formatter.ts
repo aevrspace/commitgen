@@ -11,27 +11,32 @@ interface FormatCurrencyOptions {
 }
 
 export function formatCurrency(
-  value: number,
+  value: number | undefined | null,
   options: FormatCurrencyOptions = {}
 ): string {
   const {
     currency = "USD",
     locale = "en-US",
-    minimumFractionDigits = 2,
-    maximumFractionDigits = 5,
+    minimumFractionDigits: minFD = 2,
+    maximumFractionDigits: maxFD = 5,
     display = "symbol",
     symbolFirst = true,
   } = options;
 
+  let minimumFractionDigits = minFD < 0 ? 0 : minFD;
+  const maximumFractionDigits = maxFD < 0 ? 0 : maxFD;
+
+  if (minimumFractionDigits > maximumFractionDigits) {
+    minimumFractionDigits = maximumFractionDigits;
+  }
+
   try {
-    // Format the number first
     const formattedNumber = new Intl.NumberFormat(locale, {
       style: "decimal",
       minimumFractionDigits,
       maximumFractionDigits,
-    }).format(value);
+    }).format(value || 0);
 
-    // Get symbol if needed
     let symbol = "";
     if (display === "symbol" || display === "both") {
       try {
@@ -40,12 +45,10 @@ export function formatCurrency(
           symbol = foundSymbol;
         }
       } catch {
-        // If symbol lookup fails, fall back to code-only display
         return `${currency} ${formattedNumber}`;
       }
     }
 
-    // Return formatted string based on display option
     switch (display) {
       case "symbol":
         return symbol
@@ -64,8 +67,9 @@ export function formatCurrency(
     }
   } catch (error) {
     logger.error("🚫 Something went wrong while formatting currency:", error);
-    // Ultimate fallback
-    return `${currency} ${value.toFixed(minimumFractionDigits)}`;
+    return `${currency} ${(value || 0).toFixed(
+      Math.max(0, minimumFractionDigits)
+    )}`;
   }
 }
 
@@ -173,44 +177,3 @@ function applyFormatting(
     .replace(new RegExp(`(.{${spacing}})`, "g"), `$1${separator}`)
     .trim();
 }
-
-// // Usage examples:
-
-// // Basic masking (12 asterisks + last 4 digits)
-// console.log(formatCardNumber("1234567890123456", { mask: true }));
-// // Output: "**** **** **** 3456"
-
-// // Custom mask character and count
-// console.log(
-//   formatCardNumber("1234567890123456", {
-//     mask: true,
-//     maskChar: "#",
-//     maskCount: 8,
-//   }),
-// );
-// // Output: "#### #### 3456"
-
-// // Format without masking (default: space every 4 digits)
-// console.log(formatCardNumber("1234567890123456"));
-// // Output: "1234 5678 9012 3456"
-
-// // Custom spacing
-// console.log(formatCardNumber("123456789", { spacing: 3, separator: "-" }));
-// // Output: "123-456-789"
-
-// // Custom pattern
-// console.log(
-//   formatCardNumber("1234567890123456", {
-//     customPattern: "XXXX-XXXX-XXXX-XXXX",
-//   }),
-// );
-// // Output: "1234-5678-9012-3456"
-
-// // Masked with custom pattern
-// console.log(
-//   formatCardNumber("1234567890123456", {
-//     mask: true,
-//     customPattern: "XXXX-XXXX-XXXX-XXXX",
-//   }),
-// );
-// // Output: "****-****-****-3456"

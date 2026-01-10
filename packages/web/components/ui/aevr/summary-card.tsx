@@ -51,11 +51,11 @@ const SummaryCard: React.FC<{
                   } ${!summary && index === 0 ? "rounded-bl-2xl" : ""}`
                 : // Vertical layout classes (original)
                   `border-b-0 ${index === 0 && "rounded-t-xl"} ${
-                    index === items.length - 1 ? "rounded-b-2xl !border-b" : ""
+                    index === items.length - 1 ? "rounded-b-2xl border-b!" : ""
                   } ${
                     summary
                       ? index === items.length - 1
-                        ? "rounded-b-2xl !border-b"
+                        ? "rounded-b-2xl border-b!"
                         : ""
                       : ""
                   }`
