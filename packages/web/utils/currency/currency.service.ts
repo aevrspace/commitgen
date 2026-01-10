@@ -52,7 +52,7 @@ export class CurrencyService {
       const params = new URLSearchParams({
         apikey: this.apiKey,
         ...(symbols && { symbols }),
-        ...(base !== "USD" && { base }),
+        // Free plan only supports USD base. We ignore the 'base' argument.
       });
       logger?.info(`Fetching currency rates for symbols: ${symbols || "all"}`);
       const response = await this.httpClient.makeRequest<CurrencyRatesResponse>(

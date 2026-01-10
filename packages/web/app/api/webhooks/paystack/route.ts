@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { WalletTransaction } from "@/models/WalletTransaction";
 import User from "@/models/User";
+import { WebhookEvent } from "@/models/WebhookEvent";
 
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY!;
@@ -15,42 +16,107 @@ export async function POST(request: Request) {
 
   const event = JSON.parse(body);
 
-  if (event.event === "charge.success") {
-    const reference = event.data.reference;
+  // 1b. Log Event
+  const webhookEvent = await WebhookEvent.create({
+    provider: "paystack",
+    eventType: event.event,
+    payload: event,
+    processingStatus: "processing",
+    processingHistory: [
+      { status: "processing", message: "Signature verified" },
+    ],
+  });
 
-    // 2. Idempotency Check
-    const existing = await WalletTransaction.findOne({
-      providerReference: reference,
-      status: "confirmed",
-    });
-    if (existing) return NextResponse.json({ message: "Already processed" });
+  try {
+    if (event.event === "charge.success") {
+      const reference = event.data.reference;
 
-    // 3. Verify Transaction
-    // Optional: we can skip this if we trust the signature, but double check is good.
-    // For speed/rate limits, we might rely on signature.
-    // The guide says check verification.
-
-    // 4. Update Transaction & User Credits
-    const transaction = await WalletTransaction.findOne({
-      providerReference: reference,
-    });
-
-    if (transaction) {
-      transaction.status = "confirmed";
-      // transaction.amount = event.data.amount / 100; // Store Net amount if we want, but we stored predicted amount
-      await transaction.save();
-
-      const creditsToGive = transaction.metadata?.credits || 0;
-
-      if (creditsToGive > 0) {
-        await User.findByIdAndUpdate(
-          transaction.userId,
-          { $inc: { credits: creditsToGive } },
-          { new: true }
-        );
+      // 2. Idempotency Check
+      const existing = await WalletTransaction.findOne({
+        providerReference: reference,
+        status: "confirmed",
+      });
+      if (existing) {
+        webhookEvent.processingStatus = "processed";
+        webhookEvent.processingHistory.push({
+          status: "skipped",
+          message: "Transaction already processed",
+        });
+        await webhookEvent.save();
+        return NextResponse.json({ message: "Already processed" });
       }
+
+      // 3. Update Transaction & User Credits
+      const transaction = await WalletTransaction.findOne({
+        providerReference: reference,
+      });
+
+      if (transaction) {
+        transaction.status = "confirmed";
+        // Enrich Data
+        if (event.data.customer) {
+          transaction.metadata = {
+            ...transaction.metadata,
+            customer: {
+              email: event.data.customer.email,
+              first_name: event.data.customer.first_name,
+              last_name: event.data.customer.last_name,
+              phone: event.data.customer.phone,
+              customer_code: event.data.customer.customer_code,
+            },
+            channel: event.data.channel,
+            ip_address: event.data.ip_address,
+            paid_at: event.data.paid_at,
+          };
+        }
+        await transaction.save();
+
+        const creditsToGive = transaction.metadata?.credits || 0;
+
+        if (creditsToGive > 0) {
+          await User.findByIdAndUpdate(
+            transaction.userId,
+            { $inc: { credits: creditsToGive } },
+            { new: true }
+          );
+        }
+
+        webhookEvent.relatedTransactionId = transaction._id;
+        webhookEvent.processingStatus = "processed";
+        webhookEvent.processingHistory.push({
+          status: "success",
+          message: "Transaction confirmed and credits added",
+        });
+      } else {
+        webhookEvent.processingStatus = "failed";
+        webhookEvent.processingHistory.push({
+          status: "failed",
+          message: "Transaction reference not found",
+        });
+      }
+    } else {
+      webhookEvent.processingStatus = "processed";
+      webhookEvent.processingHistory.push({
+        status: "ignored",
+        message: "Event type not handled",
+      });
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      webhookEvent.processingStatus = "failed";
+      webhookEvent.processingHistory.push({
+        status: "error",
+        message: error.message,
+      });
+    } else {
+      webhookEvent.processingStatus = "failed";
+      webhookEvent.processingHistory.push({
+        status: "error",
+        message: "Unknown error",
+      });
     }
   }
 
+  await webhookEvent.save();
   return NextResponse.json({ received: true });
 }
