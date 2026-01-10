@@ -1,5 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import crypto from "crypto";
+import dbConnect from "@/lib/db";
+import AuthToken from "@/models/AuthToken";
 import { WalletTransaction } from "@/models/WalletTransaction";
 import {
   initializePaystackPayment,
@@ -9,19 +12,36 @@ import {
 import { nanoid } from "nanoid";
 import User from "@/models/User";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const {
-      amountOfCredits,
-      email,
-      userId,
-      provider = "paystack",
-    } = await request.json();
+    const body = await request.json();
+    const { amountOfCredits, provider = "paystack" } = body;
+    let { userId, email } = body;
+
+    // Authentication Check
+    await dbConnect();
+
+    let token = request.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+      const cookieStore = await cookies();
+      token = cookieStore.get("authToken")?.value;
+    }
+
+    if (token) {
+      const authToken = await AuthToken.findOne({ token });
+      if (authToken && authToken.expiresAt > new Date()) {
+        userId = authToken.userId;
+        const user = await User.findById(userId);
+        if (user) {
+          email = user.email;
+        }
+      }
+    }
 
     if (!amountOfCredits || !email || !userId) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        { error: "Authentication failed or missing required fields" },
+        { status: 401 }
       );
     }
 

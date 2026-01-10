@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { WalletTransaction } from "@/models/WalletTransaction";
 import User from "@/models/User";
-import { verifyPaystackPayment } from "@/lib/payment";
 
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY!;

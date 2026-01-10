@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { UserProfile } from "@/app/dashboard/page"; // Will move type in next step
 import SummaryCard from "@/components/ui/aevr/summary-card";
 import { Card } from "@/components/ui/aevr/card";
 import { Button } from "@/components/ui/aevr/button";
+import { CommitGenerator } from "./CommitGenerator";
 import { LogoutCurve, Copy, Key } from "iconsax-react";
 
 interface DashboardViewProps {
@@ -42,9 +44,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             label: "Available Credits",
             value: user?.credits?.toString() ?? "0",
             content: (
-              <span className="text-xs text-neutral-500 mt-1">
-                Used to generate commit messages
-              </span>
+              <div className="flex flex-col gap-2 mt-1">
+                <span className="text-xs text-neutral-500">
+                  Used to generate commit messages
+                </span>
+                <Link href="/credits" className="w-fit">
+                  <Button size="sm" variant="secondary" className="h-7 text-xs">
+                    Top Up
+                  </Button>
+                </Link>
+              </div>
             ),
           },
           {
@@ -84,6 +93,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           in your terminal or use this token in your configuration.
         </p>
       </Card>
+
+      <CommitGenerator token={token} />
     </div>
   );
 };

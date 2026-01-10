@@ -11,6 +11,10 @@ interface User {
   credits: number;
 }
 
+import { usePersistedState } from "@/hooks/aevr/use-persisted-state";
+import { useCurrency } from "@/hooks/useCurrency";
+import { formatCurrency } from "@/utils/aevr/number-formatter";
+
 export default function CreditsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,18 +22,20 @@ export default function CreditsPage() {
   const [provider, setProvider] = useState<"paystack" | "100pay">("paystack");
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    // Assuming token is in localStorage or handled by a hook, but for now let's try to fetch
-    // If we use httpOnly cookie, it's automatic. If bearer, we need to find where it is stored.
-    // I'll assume localStorage "token" for now as seen in typical auth.
-    // If not, the user might need to log in again or I need to find the token storage.
-    const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+  // Sync with Global Auth State
+  const { state: token, isHydrated } = usePersistedState<string>("", {
+    storageKey: "authToken",
+  });
 
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchUser = async () => {
       try {
         const res = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
@@ -46,7 +52,21 @@ export default function CreditsPage() {
     };
 
     fetchUser();
-  }, []);
+  }, [token, isHydrated]);
+
+  // Currency Hook
+  const { baseCurrency, isLoadingRates, convertCurrency } = useCurrency();
+
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const calc = async () => {
+      // Base price is $1
+      const res = await convertCurrency(1, "USD", baseCurrency);
+      setConvertedAmount(res);
+    };
+    calc();
+  }, [baseCurrency, convertCurrency]);
 
   const handleDeposit = async () => {
     if (!user) {
@@ -117,7 +137,7 @@ export default function CreditsPage() {
     }
   };
 
-  if (loading)
+  if (!isHydrated || loading)
     return <div className="p-10 flex justify-center">Loading...</div>;
 
   if (!user) {
@@ -162,6 +182,18 @@ export default function CreditsPage() {
             <p className="text-sm text-indigo-600/80 dark:text-indigo-400 mt-1">
               80 Credits
             </p>
+            {/* Currency Integration */}
+            <div className="mt-2 pt-2 border-t border-indigo-200 dark:border-indigo-800/50">
+              <p className="text-xs text-indigo-500/80 dark:text-indigo-400/80">
+                Approx.{" "}
+                {formatCurrency(convertedAmount, { currency: baseCurrency })}
+              </p>
+              {isLoadingRates && (
+                <span className="text-[10px] opacity-70">
+                  Updating rates...
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
