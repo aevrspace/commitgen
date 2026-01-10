@@ -7,10 +7,18 @@ import { WalletTransaction } from "@/models/WalletTransaction";
 import {
   initializePaystackPayment,
   CREDITS_PER_USD,
-  USD_TO_NGN_RATE,
+  // USD_TO_NGN_RATE, // Deprecated in favor of dynamic
 } from "@/lib/payment";
 import { nanoid } from "nanoid";
 import User from "@/models/User";
+import { createCurrencyService } from "@/utils/currency/currency.service";
+import { HttpClient } from "@/utils/shared/httpClient";
+import { calculatePaystackTotal } from "@/utils/paystack/fees";
+
+const currencyService = createCurrencyService(
+  new HttpClient({ baseUrl: "https://api.currencyfreaks.com" }),
+  process.env.NEXT_PUBLIC_CURRENCY_API_KEY || ""
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +54,19 @@ export async function POST(request: NextRequest) {
     }
 
     const priceInUsd = amountOfCredits / CREDITS_PER_USD;
-    const priceInNgn = priceInUsd * USD_TO_NGN_RATE;
+
+    // Fetch Dynamic Rate
+    let ngnRate = 1500; // Fallback
+    try {
+      const rates = await currencyService.getLatestRates("NGN", "USD");
+      if (rates.rates["NGN"]) {
+        ngnRate = parseFloat(rates.rates["NGN"]);
+      }
+    } catch (e) {
+      console.error("Failed to fetch dynamic rate, using fallback", e);
+    }
+
+    const priceInNgn = priceInUsd * ngnRate;
 
     // For 100Pay, we just create the transaction reference and return it for the frontend to use
     if (provider === "100pay") {
@@ -54,7 +74,7 @@ export async function POST(request: NextRequest) {
       await WalletTransaction.create({
         userId,
         type: "deposit",
-        amount: amountOfCredits, // We store credits amount or money? Let's store CREDITS amount in metadata or assume amount is money?
+        amount: priceInNgn, // We store credits amount or money? Let's store CREDITS amount in metadata or assume amount is money?
         // The WalletTransaction model has `amount` which usually implies currency.
         // But here we are buying CREDITS.
         // Let's store the PRICE in the transaction amount, and credits in metadata.
@@ -76,20 +96,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Paystack
+    // Calculate total amount to charge user (Price + Fees)
+    const finalChargeAmount = calculatePaystackTotal(priceInNgn);
+    const fee = finalChargeAmount - priceInNgn;
+
     const reference = crypto.randomBytes(16).toString("hex");
 
     // 1. Create Pending Transaction
     await WalletTransaction.create({
       userId,
       type: "deposit",
-      amount: priceInNgn,
+      amount: finalChargeAmount, // Total charged
+      fee: fee, // The fee portion
       status: "pending",
       providerReference: reference,
-      metadata: { provider: "paystack", credits: amountOfCredits },
+      metadata: {
+        provider: "paystack",
+        credits: amountOfCredits,
+        netAmount: priceInNgn,
+      },
     });
 
-    // 2. Initialize with Paystack
-    const data = await initializePaystackPayment(email, priceInNgn, reference);
+    // 2. Initialize with Paystack (Charge the total)
+    const data = await initializePaystackPayment(
+      email,
+      finalChargeAmount,
+      reference
+    );
 
     if (!data.status) {
       console.error("Paystack init error:", data);

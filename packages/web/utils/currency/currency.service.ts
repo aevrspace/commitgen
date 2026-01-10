@@ -78,11 +78,51 @@ export class CurrencyService {
           `${this.baseUrl}/supported-currencies`,
           { method: "GET" }
         );
+
+      let data: SupportedCurrenciesResponse;
       if (isApiResponse(response)) {
-        return response.data;
+        data = response.data;
       } else {
-        return response as SupportedCurrenciesResponse;
+        data = response as SupportedCurrenciesResponse;
       }
+
+      // Restrict to Top 10 Fiat + 5 Crypto
+      const WHITELIST = [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "AUD",
+        "CAD",
+        "CHF",
+        "CNY",
+        "INR",
+        "NGN", // Fiat
+        "BTC",
+        "ETH",
+        "USDT",
+        "BNB",
+        "SOL", // Crypto
+      ];
+
+      const filteredMap: { [key: string]: SupportedCurrency } = {};
+
+      // Handle if data has 'supportedCurrenciesMap' property OR if data IS the map
+      // We cast to any to safe check properties
+      const rawMap = data.supportedCurrenciesMap || data;
+
+      if (rawMap) {
+        WHITELIST.forEach((code) => {
+          // Check if the code exists in the map
+          if (rawMap[code]) {
+            filteredMap[code] = rawMap[code];
+          }
+        });
+        // Always return in the expected interface format
+        return { supportedCurrenciesMap: filteredMap };
+      }
+
+      return data;
     } catch (error) {
       logger?.error(`Failed to fetch supported currencies:`, error);
       throw error;

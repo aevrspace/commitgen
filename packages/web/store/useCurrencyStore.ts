@@ -153,7 +153,7 @@ const useCurrencyStore = create<CurrencyStoreState>()(
       setIsHydrated: (isHydrated) => set({ isHydrated }),
     }),
     {
-      name: "currencyStore",
+      name: "currencyStore-v2",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         rates: state?.rates,
