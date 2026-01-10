@@ -10,6 +10,7 @@ import { ConfigManager } from "./config";
 import { configureCommand } from "./commands/configure";
 import { loginCommand } from "./commands/login"; // NEW
 import { buyCreditsCommand } from "./commands/buy-credits"; // NEW
+import { dashboardCommand } from "./commands/dashboard"; // NEW
 import { createProvider } from "./providers";
 import { CommitGenProvider } from "./providers/commitgen"; // NEW
 import { CommitHistoryAnalyzer } from "./utils/commit-history";
@@ -851,6 +852,12 @@ program
   .command("buy-credits")
   .description("Buy credits for CommitGen")
   .action(buyCreditsCommand);
+
+program
+  .command("dashboard")
+  .alias("dash")
+  .description("Open the CommitGen dashboard in your browser")
+  .action(dashboardCommand);
 
 program
   .command("show-config")

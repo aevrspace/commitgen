@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { LoginForm } from "./_components/LoginForm";
 import { VerifyForm } from "./_components/VerifyForm";
 import { DashboardView } from "./_components/DashboardView";
@@ -16,6 +17,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"login" | "verify" | "dashboard">("login");
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Use AEVR persisted state hook for auth token
   const {
@@ -24,6 +27,21 @@ export default function Dashboard() {
     resetState,
     isHydrated,
   } = usePersistedState<string>("", { storageKey: "authToken" });
+
+  // Handle CLI token from query parameter
+  useEffect(() => {
+    if (isHydrated) {
+      const cliToken = searchParams.get("cli_token");
+      if (cliToken) {
+        // Set the token from CLI and clean up URL
+        setToken(cliToken);
+        // Remove cli_token from URL without refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete("cli_token");
+        router.replace(url.pathname + url.search, { scroll: false });
+      }
+    }
+  }, [isHydrated, searchParams, setToken, router]);
 
   // Handle initial hydration and token check
   // Derive the current step based on authentication state
