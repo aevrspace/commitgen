@@ -1,54 +1,108 @@
-# Currency Feature Documentation
+# Currency Feature Documentation - Complete Guide
 
-This document contains the complete implementation of the currency feature, including all necessary code, dependencies, and setup instructions. You can copy and paste this directly into your project.
+A comprehensive implementation guide for multi-currency support including real-time exchange rates, currency conversion, and caching strategies.
 
-## 1. Project Structure
+---
 
-To maintain the import paths used in the code below, organize your files as follows:
+## Table of Contents
+
+1. [Architecture Overview](#1-architecture-overview)
+2. [Environment Setup](#2-environment-setup)
+3. [Project Structure](#3-project-structure)
+4. [HTTP Client](#4-http-client)
+5. [Currency Service](#5-currency-service)
+6. [Currency Store (Zustand)](#6-currency-store-zustand)
+7. [useCurrency Hook](#7-usecurrency-hook)
+8. [Number Formatting](#8-number-formatting)
+9. [Integration with Payments](#9-integration-with-payments)
+10. [Best Practices](#10-best-practices)
+
+---
+
+## 1. Architecture Overview
 
 ```
-src/
-├── utils/
-│   ├── shared/
-│   │   └── httpClient.ts
-│   ├── currency/
-│   │   └── currency.service.ts
-│   └── aevr/
-│       └── number-formatter.ts
-├── store/
-│   └── useCurrencyStore.ts
-├── hooks/
-│   └── useCurrency.ts
-└── components/
-    └── DemoCurrencyComponent.tsx
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CURRENCY SYSTEM FLOW                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Component → useCurrency Hook → Currency Store (Zustand)                   │
+│                     ↓                    ↓                                  │
+│              Currency Service      Cached Rates (localStorage)             │
+│                     ↓                                                       │
+│              CurrencyFreaks API                                             │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                        CACHING STRATEGY                             │   │
+│   ├─────────────────────────────────────────────────────────────────────┤   │
+│   │  • Exchange Rates: 15 minute cache                                  │   │
+│   │  • Supported Currencies: 24 hour cache                              │   │
+│   │  • Storage: localStorage via Zustand persist                        │   │
+│   │  • Hydration: Wait for store rehydration before API calls           │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-_Note: The code assumes you have a path alias `@/` pointing to your `src` directory (standard in Next.js). If not, adjust imports to relative paths (e.g., `../../utils/shared/httpClient`)._
+**Key Features:**
 
-## 2. Dependencies
+- Real-time exchange rates from CurrencyFreaks API
+- Smart caching with configurable TTL
+- Zustand state management with localStorage persistence
+- Client-side hydration handling for SSR
+- Supports 150+ fiat currencies and crypto
 
-Install the required packages:
+---
+
+## 2. Environment Setup
+
+### Required Environment Variable
+
+```env
+NEXT_PUBLIC_CURRENCY_API_KEY=your_currencyfreaks_api_key
+```
+
+Get your API key from: [CurrencyFreaks](https://currencyfreaks.com/)
+
+### Dependencies
 
 ```bash
 npm install zustand @untools/logger iso-country-currency
 ```
 
-_Note: If you don't want to use `@untools/logger`, you can replace `logger.info`, `logger.debug`, and `logger.error` with `console.log` and `console.error` in the code below._
+**Alternatives:**
+
+- Replace `@untools/logger` with `console` if preferred
+- `iso-country-currency` provides currency symbols by code
 
 ---
 
-## 2. Shared Utilities
+## 3. Project Structure
 
-### A. HTTP Client (`utils/shared/httpClient.ts`)
+```
+src/
+├── utils/
+│   ├── shared/
+│   │   └── httpClient.ts       # Reusable HTTP client with retries
+│   ├── currency/
+│   │   └── currency.service.ts # CurrencyFreaks API wrapper
+│   └── aevr/
+│       └── number-formatter.ts # Currency & number formatting
+├── store/
+│   └── useCurrencyStore.ts     # Zustand store
+└── hooks/
+    └── useCurrency.ts          # React hook
+```
 
-This is a robust wrapper around `fetch` with retry logic and typing.
+---
+
+## 4. HTTP Client
+
+**File**: `utils/shared/httpClient.ts`
+
+A robust fetch wrapper with retry logic, timeout handling, and type safety.
 
 ```typescript
-// ./utils/shared/httpClient.ts
-
-import { logger } from "@untools/logger";
-
-// HTTP Client interfaces and types
 export interface ApiResponse<T = unknown> {
   data: T;
   status: number;
@@ -78,17 +132,14 @@ export interface HttpError extends Error {
   response?: string;
 }
 
-// Type guard to check if response is ApiResponse
 export function isApiResponse<T>(
-  response: unknown,
+  response: unknown
 ): response is ApiResponse<T> {
   return (
     response !== null &&
     typeof response === "object" &&
     "data" in response &&
-    "status" in response &&
-    "statusText" in response &&
-    "headers" in response
+    "status" in response
   );
 }
 
@@ -101,24 +152,21 @@ export class HttpClient {
 
   constructor(config: HttpClientConfig = {}) {
     this.baseUrl = config.baseUrl || "";
-    this.timeout = config.timeout || 30000; // 30 seconds default
+    this.timeout = config.timeout || 30000;
     this.defaultHeaders = {
       "Content-Type": "application/json",
       Accept: "application/json",
       ...config.defaultHeaders,
     };
     this.retries = config.retries || 3;
-    this.retryDelay = config.retryDelay || 1000; // 1 second default
+    this.retryDelay = config.retryDelay || 1000;
   }
 
-  /**
-   * Create an HTTP error with additional context
-   */
   private createHttpError(
     message: string,
     status?: number,
     statusText?: string,
-    response?: string,
+    response?: string
   ): HttpError {
     const error = new Error(message) as HttpError;
     error.name = "HttpError";
@@ -128,35 +176,24 @@ export class HttpClient {
     return error;
   }
 
-  /**
-   * Sleep utility for retry delays
-   */
   private async sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  /**
-   * Build full URL from base URL and endpoint
-   */
   private buildUrl(url: string): string {
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
-
     const base = this.baseUrl.endsWith("/")
       ? this.baseUrl.slice(0, -1)
       : this.baseUrl;
     const endpoint = url.startsWith("/") ? url : `/${url}`;
-
     return `${base}${endpoint}`;
   }
 
-  /**
-   * Make HTTP request with retry logic
-   */
   async makeRequest<T = unknown>(
     url: string,
-    options: RequestOptions = {},
+    options: RequestOptions = {}
   ): Promise<T | ApiResponse<T>> {
     const {
       method = "GET",
@@ -169,7 +206,6 @@ export class HttpClient {
     const fullUrl = this.buildUrl(url);
     const requestHeaders = { ...this.defaultHeaders, ...headers };
 
-    // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -177,95 +213,63 @@ export class HttpClient {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        logger?.info(
-          `Making ${method} request to ${fullUrl} (attempt ${attempt + 1}/${retries + 1})`,
-        );
-
         const requestInit: RequestInit = {
           method,
           headers: requestHeaders,
           signal: controller.signal,
         };
 
-        // Add body for methods that support it
         if (body && ["POST", "PUT", "PATCH"].includes(method)) {
-          if (typeof body === "string") {
-            requestInit.body = body;
-          } else if (
-            body instanceof FormData ||
-            body instanceof Blob ||
-            body instanceof ArrayBuffer
-          ) {
-            requestInit.body = body;
-          } else {
-            requestInit.body = JSON.stringify(body);
-          }
+          requestInit.body =
+            typeof body === "string" ? body : JSON.stringify(body);
         }
 
         const response = await fetch(fullUrl, requestInit);
         clearTimeout(timeoutId);
 
-        // Check if response is ok
         if (!response.ok) {
           const errorText = await response.text().catch(() => "Unknown error");
           throw this.createHttpError(
             `HTTP ${response.status}: ${response.statusText}`,
             response.status,
             response.statusText,
-            errorText,
+            errorText
           );
         }
 
-        // Parse response
         const contentType = response.headers.get("content-type") || "";
-        let data: T;
+        const data = contentType.includes("application/json")
+          ? await response.json()
+          : await response.text();
 
-        if (contentType.includes("application/json")) {
-          data = (await response.json()) as T;
-        } else {
-          data = (await response.text()) as T;
-        }
-
-        // Convert headers to plain object
         const responseHeaders: Record<string, string> = {};
         response.headers.forEach((value, key) => {
           responseHeaders[key] = value;
         });
 
-        logger?.info(`Successfully completed ${method} request to ${fullUrl}`);
-
-        // Return as ApiResponse format for consistency
-        const apiResponse: ApiResponse<T> = {
+        return {
           data,
           status: response.status,
           statusText: response.statusText,
           headers: responseHeaders,
-        };
-
-        return apiResponse;
+        } as ApiResponse<T>;
       } catch (error) {
         clearTimeout(timeoutId);
 
         if (error instanceof Error) {
-          if (error.name === "AbortError") {
-            lastError = this.createHttpError(
-              `Request timeout after ${timeout}ms`,
-              408,
-              "Request Timeout",
-            );
-          } else {
-            lastError = error as HttpError;
-          }
+          lastError =
+            error.name === "AbortError"
+              ? this.createHttpError(
+                  `Request timeout after ${timeout}ms`,
+                  408,
+                  "Request Timeout"
+                )
+              : (error as HttpError);
         } else {
           lastError = this.createHttpError("Unknown error occurred");
         }
 
-        logger?.warn(
-          `Request attempt ${attempt + 1} failed:`,
-          lastError.message,
-        );
-
-        // Don't retry on certain status codes
+        // Don't retry on client errors
         if (
           lastError.status &&
           [400, 401, 403, 404, 422].includes(lastError.status)
@@ -273,122 +277,29 @@ export class HttpClient {
           break;
         }
 
-        // Wait before retry (except on last attempt)
         if (attempt < retries) {
           const delay = this.retryDelay * Math.pow(2, attempt); // Exponential backoff
-          logger?.info(`Retrying in ${delay}ms...`);
           await this.sleep(delay);
         }
       }
     }
 
-    // If we get here, all retries failed
-    logger?.error(
-      `All ${retries + 1} attempts failed for ${method} ${fullUrl}`,
-    );
     throw lastError;
-  }
-
-  // Convenience methods (get, post, put, delete, patch) omitted for brevity but recommended.
-}
-```
-
-### B. Number Formatter (`utils/aevr/number-formatter.ts`)
-
-Helper for consistent number and currency formatting.
-
-```typescript
-// ./utils/aevr/number-formatter.ts
-
-import { logger } from "@untools/logger";
-import { getParamByParam } from "iso-country-currency";
-
-interface FormatCurrencyOptions {
-  currency?: string;
-  locale?: string;
-  minimumFractionDigits?: number;
-  maximumFractionDigits?: number;
-  display?: "code" | "symbol" | "both";
-  symbolFirst?: boolean;
-}
-
-export function formatCurrency(
-  value: number | undefined | null,
-  options: FormatCurrencyOptions = {},
-): string {
-  const {
-    currency = "USD",
-    locale = "en-US",
-    minimumFractionDigits: minFD = 2,
-    maximumFractionDigits: maxFD = 5,
-    display = "symbol",
-    symbolFirst = true,
-  } = options;
-
-  let minimumFractionDigits = minFD < 0 ? 0 : minFD;
-  let maximumFractionDigits = maxFD < 0 ? 0 : maxFD;
-
-  if (minimumFractionDigits > maximumFractionDigits) {
-    minimumFractionDigits = maximumFractionDigits;
-  }
-
-  try {
-    const formattedNumber = new Intl.NumberFormat(locale, {
-      style: "decimal",
-      minimumFractionDigits,
-      maximumFractionDigits,
-    }).format(value || 0);
-
-    let symbol = "";
-    if (display === "symbol" || display === "both") {
-      try {
-        const foundSymbol = getParamByParam("currency", currency, "symbol");
-        if (foundSymbol) {
-          symbol = foundSymbol;
-        }
-      } catch {
-        return `${currency} ${formattedNumber}`;
-      }
-    }
-
-    switch (display) {
-      case "symbol":
-        return symbol
-          ? `${symbol}${formattedNumber}`
-          : `${currency} ${formattedNumber}`;
-      case "both":
-        if (symbol) {
-          return symbolFirst
-            ? `${symbol} ${formattedNumber} (${currency})`
-            : `${currency} ${formattedNumber} (${symbol})`;
-        }
-        return `${currency} ${formattedNumber}`;
-      case "code":
-      default:
-        return `${currency} ${formattedNumber}`;
-    }
-  } catch (error) {
-    logger.error("🚫 Something went wrong while formatting currency:", error);
-    return `${currency} ${(value || 0).toFixed(Math.max(0, minimumFractionDigits))}`;
   }
 }
 ```
 
 ---
 
-## 3. Currency Logic
+## 5. Currency Service
 
-### A. Currency Service (`utils/currency/currency.service.ts`)
+**File**: `utils/currency/currency.service.ts`
 
-This service handles the actual API calls to CurrencyFreaks and local conversion math.
+Wraps the CurrencyFreaks API for fetching rates and converting currencies.
 
 ```typescript
-// ./utils/currency/currency.service.ts
+import { HttpClient, isApiResponse } from "@/utils/shared/httpClient";
 
-import { HttpClient, isApiResponse } from "@/utils/shared/httpClient"; // Adjust path
-import { logger } from "@untools/logger";
-
-// Currency interfaces
 export interface CurrencyRate {
   [currencyCode: string]: string;
 }
@@ -416,86 +327,77 @@ export interface SupportedCurrenciesResponse {
   };
 }
 
-export interface CurrencyServiceConfig {
-  httpClient: HttpClient;
-  apiKey: string;
-}
-
 export class CurrencyService {
   private httpClient: HttpClient;
   private apiKey: string;
   private readonly baseUrl = "https://api.currencyfreaks.com/v2.0";
 
-  constructor(config: CurrencyServiceConfig) {
-    this.httpClient = config.httpClient;
-    this.apiKey = config.apiKey;
+  constructor(httpClient: HttpClient, apiKey: string) {
+    this.httpClient = httpClient;
+    this.apiKey = apiKey;
   }
 
+  /**
+   * Fetch latest exchange rates.
+   * @param symbols Comma-separated list of currency codes (optional)
+   * @param base Base currency (default: USD)
+   */
   async getLatestRates(
     symbols?: string,
-    base: string = "USD",
+    base: string = "USD"
   ): Promise<CurrencyRatesResponse> {
-    try {
-      const params = new URLSearchParams({
-        apikey: this.apiKey,
-        ...(symbols && { symbols }),
-        ...(base !== "USD" && { base }),
-      });
-      logger?.info(`Fetching currency rates for symbols: ${symbols || "all"}`);
-      const response = await this.httpClient.makeRequest<CurrencyRatesResponse>(
-        `${this.baseUrl}/rates/latest?${params.toString()}`,
-        { method: "GET" },
-      );
-      if (isApiResponse(response)) {
-        return response.data;
-      } else {
-        return response as CurrencyRatesResponse;
-      }
-    } catch (error) {
-      logger?.error(`Failed to fetch currency rates:`, error);
-      throw error;
-    }
+    const params = new URLSearchParams({
+      apikey: this.apiKey,
+      ...(symbols && { symbols }),
+      ...(base !== "USD" && { base }),
+    });
+
+    const response = await this.httpClient.makeRequest<CurrencyRatesResponse>(
+      `${this.baseUrl}/rates/latest?${params.toString()}`,
+      { method: "GET" }
+    );
+
+    return isApiResponse(response) ? response.data : response;
   }
 
+  /**
+   * Fetch all supported currencies.
+   */
   async getSupportedCurrencies(): Promise<SupportedCurrenciesResponse> {
-    try {
-      logger?.info(`Fetching supported currencies`);
-      const response =
-        await this.httpClient.makeRequest<SupportedCurrenciesResponse>(
-          `${this.baseUrl}/supported-currencies`,
-          { method: "GET" },
-        );
-      if (isApiResponse(response)) {
-        return response.data;
-      } else {
-        return response as SupportedCurrenciesResponse;
-      }
-    } catch (error) {
-      logger?.error(`Failed to fetch supported currencies:`, error);
-      throw error;
-    }
+    const response =
+      await this.httpClient.makeRequest<SupportedCurrenciesResponse>(
+        `${this.baseUrl}/supported-currencies`,
+        { method: "GET" }
+      );
+
+    return isApiResponse(response) ? response.data : response;
   }
 
+  /**
+   * Convert amount from one currency to another.
+   * Fetches fresh rates for accuracy.
+   */
   async convertCurrency(
     amount: number,
     fromCurrency: string,
-    toCurrency: string,
+    toCurrency: string
   ): Promise<number> {
     if (fromCurrency === toCurrency) return amount;
 
-    // In a real app with cached rates, you might pass rates in or fetch them here
-    // This implementation fetches fresh rates for accuracy on each convert call if not passed
     const rates = await this.getLatestRates(`${fromCurrency},${toCurrency}`);
 
     let convertedAmount: number;
 
     if (fromCurrency === rates.base) {
+      // From base currency
       const targetRate = parseFloat(rates.rates[toCurrency]);
       convertedAmount = amount * targetRate;
     } else if (toCurrency === rates.base) {
+      // To base currency
       const sourceRate = parseFloat(rates.rates[fromCurrency]);
       convertedAmount = amount / sourceRate;
     } else {
+      // Cross-rate conversion via base
       const sourceRate = parseFloat(rates.rates[fromCurrency]);
       const targetRate = parseFloat(rates.rates[toCurrency]);
       convertedAmount = (amount / sourceRate) * targetRate;
@@ -507,43 +409,58 @@ export class CurrencyService {
 
 export const createCurrencyService = (
   httpClient: HttpClient,
-  apiKey: string,
+  apiKey: string
 ): CurrencyService => {
-  return new CurrencyService({ httpClient, apiKey });
+  return new CurrencyService(httpClient, apiKey);
 };
 ```
 
-### B. Currency Store (`store/useCurrencyStore.ts`)
+---
 
-Zustand store for global state management and persistence.
+## 6. Currency Store (Zustand)
+
+**File**: `store/useCurrencyStore.ts`
+
+Global state with persistence and cache management.
 
 ```typescript
-// ./store/useCurrencyStore.ts
-
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
   CurrencyRatesResponse,
   SupportedCurrency,
-} from "@/utils/currency/currency.service"; // Adjust path
+} from "@/utils/currency/currency.service";
 
 export interface CurrencyStoreState {
+  // Data
   rates: CurrencyRatesResponse | null;
   supportedCurrencies: { [currencyCode: string]: SupportedCurrency };
+
+  // Loading states
   isLoadingRates: boolean;
   isLoadingSupportedCurrencies: boolean;
+
+  // Errors
   ratesError: string | null;
   supportedCurrenciesError: string | null;
+
+  // Cache timestamps
   lastRatesUpdate: number | null;
   lastSupportedCurrenciesUpdate: number | null;
   ratesCacheDuration: number;
   supportedCurrenciesCacheDuration: number;
+
+  // User preferences
   baseCurrency: string;
   favoriteCurrencies: string[];
 
+  // Hydration flag
+  isHydrated: boolean;
+
+  // Actions
   setRates: (rates: CurrencyRatesResponse) => void;
   setSupportedCurrencies: (currencies: {
-    [currencyCode: string]: SupportedCurrency;
+    [code: string]: SupportedCurrency;
   }) => void;
   setIsLoadingRates: (loading: boolean) => void;
   setIsLoadingSupportedCurrencies: (loading: boolean) => void;
@@ -552,22 +469,18 @@ export interface CurrencyStoreState {
   setBaseCurrency: (currency: string) => void;
   addFavoriteCurrency: (currency: string) => void;
   removeFavoriteCurrency: (currency: string) => void;
-  setFavoriteCurrencies: (currencies: string[]) => void;
   isRatesCacheExpired: () => boolean;
   isSupportedCurrenciesCacheExpired: () => boolean;
-  getCurrencyRate: (currencyCode: string) => string | null;
-  getSupportedCurrency: (currencyCode: string) => SupportedCurrency | null;
+  getCurrencyRate: (code: string) => string | null;
   getPopularCurrencies: () => SupportedCurrency[];
-  clearRatesCache: () => void;
-  clearSupportedCurrenciesCache: () => void;
   reset: () => void;
-  isHydrated: boolean;
   setIsHydrated: (isHydrated: boolean) => void;
 }
 
 const useCurrencyStore = create<CurrencyStoreState>()(
   persist(
     (set, get) => ({
+      // Initial state
       rates: null,
       supportedCurrencies: {},
       isLoadingRates: false,
@@ -580,44 +493,54 @@ const useCurrencyStore = create<CurrencyStoreState>()(
       supportedCurrenciesCacheDuration: 24 * 60 * 60 * 1000, // 24 hours
       baseCurrency: "USD",
       favoriteCurrencies: ["USD", "EUR", "GBP", "NGN"],
+      isHydrated: false,
 
+      // Actions
       setRates: (rates) =>
         set({ rates, lastRatesUpdate: Date.now(), ratesError: null }),
+
       setSupportedCurrencies: (currencies) =>
         set({
           supportedCurrencies: currencies,
           lastSupportedCurrenciesUpdate: Date.now(),
           supportedCurrenciesError: null,
         }),
+
       setIsLoadingRates: (loading) => set({ isLoadingRates: loading }),
       setIsLoadingSupportedCurrencies: (loading) =>
         set({ isLoadingSupportedCurrencies: loading }),
+
       setRatesError: (error) =>
         set({ ratesError: error, isLoadingRates: false }),
+
       setSupportedCurrenciesError: (error) =>
         set({
           supportedCurrenciesError: error,
           isLoadingSupportedCurrencies: false,
         }),
+
       setBaseCurrency: (currency) => set({ baseCurrency: currency }),
+
       addFavoriteCurrency: (currency) => {
         const { favoriteCurrencies } = get();
-        if (!favoriteCurrencies.includes(currency))
+        if (!favoriteCurrencies.includes(currency)) {
           set({ favoriteCurrencies: [...favoriteCurrencies, currency] });
+        }
       },
+
       removeFavoriteCurrency: (currency) => {
         const { favoriteCurrencies } = get();
         set({
           favoriteCurrencies: favoriteCurrencies.filter((c) => c !== currency),
         });
       },
-      setFavoriteCurrencies: (currencies) =>
-        set({ favoriteCurrencies: currencies }),
+
       isRatesCacheExpired: () => {
         const { lastRatesUpdate, ratesCacheDuration } = get();
         if (!lastRatesUpdate) return true;
         return Date.now() - lastRatesUpdate > ratesCacheDuration;
       },
+
       isSupportedCurrenciesCacheExpired: () => {
         const {
           lastSupportedCurrenciesUpdate,
@@ -629,10 +552,9 @@ const useCurrencyStore = create<CurrencyStoreState>()(
           supportedCurrenciesCacheDuration
         );
       },
-      getCurrencyRate: (currencyCode) =>
-        get().rates?.rates[currencyCode] || null,
-      getSupportedCurrency: (currencyCode) =>
-        get().supportedCurrencies[currencyCode] || null,
+
+      getCurrencyRate: (code) => get().rates?.rates[code] || null,
+
       getPopularCurrencies: () => {
         const { supportedCurrencies } = get();
         return [
@@ -650,14 +572,7 @@ const useCurrencyStore = create<CurrencyStoreState>()(
           .map((code) => supportedCurrencies[code])
           .filter(Boolean);
       },
-      clearRatesCache: () =>
-        set({ rates: null, lastRatesUpdate: null, ratesError: null }),
-      clearSupportedCurrenciesCache: () =>
-        set({
-          supportedCurrencies: {},
-          lastSupportedCurrenciesUpdate: null,
-          supportedCurrenciesError: null,
-        }),
+
       reset: () =>
         set({
           rates: null,
@@ -671,44 +586,46 @@ const useCurrencyStore = create<CurrencyStoreState>()(
           baseCurrency: "USD",
           favoriteCurrencies: ["USD", "EUR", "GBP", "NGN"],
         }),
-      isHydrated: false,
+
       setIsHydrated: (isHydrated) => set({ isHydrated }),
     }),
     {
       name: "currencyStore",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        rates: state?.rates,
-        supportedCurrencies: state?.supportedCurrencies,
-        lastRatesUpdate: state?.lastRatesUpdate,
-        lastSupportedCurrenciesUpdate: state?.lastSupportedCurrenciesUpdate,
-        baseCurrency: state?.baseCurrency,
-        favoriteCurrencies: state?.favoriteCurrencies,
-        ratesCacheDuration: state?.ratesCacheDuration,
+        rates: state.rates,
+        supportedCurrencies: state.supportedCurrencies,
+        lastRatesUpdate: state.lastRatesUpdate,
+        lastSupportedCurrenciesUpdate: state.lastSupportedCurrenciesUpdate,
+        baseCurrency: state.baseCurrency,
+        favoriteCurrencies: state.favoriteCurrencies,
+        ratesCacheDuration: state.ratesCacheDuration,
         supportedCurrenciesCacheDuration:
-          state?.supportedCurrenciesCacheDuration,
+          state.supportedCurrenciesCacheDuration,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setIsHydrated(true);
       },
-    },
-  ),
+    }
+  )
 );
 
 export default useCurrencyStore;
 ```
 
-### C. Currency Hook (`hooks/useCurrency.ts`)
+---
 
-Connects everything together for React components.
+## 7. useCurrency Hook
+
+**File**: `hooks/useCurrency.ts`
+
+React hook that connects components to the currency system.
 
 ```typescript
-// ./hooks/useCurrency.ts
-
 import { useCallback, useEffect, useMemo } from "react";
-import { HttpClient } from "@/utils/shared/httpClient"; // Adjust path
-import { createCurrencyService } from "@/utils/currency/currency.service"; // Adjust path
-import useCurrencyStore from "@/store/useCurrencyStore"; // Adjust path
+import { HttpClient } from "@/utils/shared/httpClient";
+import { createCurrencyService } from "@/utils/currency/currency.service";
+import useCurrencyStore from "@/store/useCurrencyStore";
 
 interface UseCurrencyConfig {
   httpClient?: HttpClient;
@@ -720,64 +637,85 @@ interface UseCurrencyConfig {
 const DEFAULT_HTTP_CLIENT = new HttpClient({
   baseUrl: "https://api.currencyfreaks.com",
 });
-// REPLACE WITH YOUR API KEY
-const DEFAULT_API_KEY = "YOUR_API_KEY";
 
 export const useCurrency = (config: UseCurrencyConfig = {}) => {
   const {
     httpClient = DEFAULT_HTTP_CLIENT,
-    apiKey = DEFAULT_API_KEY,
+    apiKey = process.env.NEXT_PUBLIC_CURRENCY_API_KEY || "",
     autoFetchRates = true,
     autoFetchSupportedCurrencies = true,
   } = config;
 
   const store = useCurrencyStore();
 
+  const {
+    ratesError,
+    supportedCurrenciesError,
+    isRatesCacheExpired,
+    isSupportedCurrenciesCacheExpired,
+    setIsLoadingRates,
+    setRates,
+    setRatesError,
+    setIsLoadingSupportedCurrencies,
+    setSupportedCurrencies,
+    setSupportedCurrenciesError,
+    isHydrated,
+  } = store;
+
   // Stable service instance
   const currencyService = useMemo(
     () => createCurrencyService(httpClient, apiKey),
-    [httpClient, apiKey],
+    [httpClient, apiKey]
   );
 
   const fetchRates = useCallback(
     async (symbols?: string, forceRefresh = false) => {
-      if (!forceRefresh && !store.isRatesCacheExpired()) return;
-      store.setIsLoadingRates(true);
-      store.setRatesError(null);
+      if (!forceRefresh && !isRatesCacheExpired()) return;
+      setIsLoadingRates(true);
+      setRatesError(null);
       try {
-        const ratesData = await currencyService.getLatestRates(
-          symbols,
-          store.baseCurrency,
-        );
-        store.setRates(ratesData);
+        const ratesData = await currencyService.getLatestRates(symbols);
+        setRates(ratesData);
       } catch (error) {
-        store.setRatesError(
-          error instanceof Error ? error.message : "Failed to fetch rates",
+        setRatesError(
+          error instanceof Error ? error.message : "Failed to fetch rates"
         );
       } finally {
-        store.setIsLoadingRates(false);
+        setIsLoadingRates(false);
       }
     },
-    [currencyService, store.baseCurrency, store.isRatesCacheExpired],
+    [
+      currencyService,
+      isRatesCacheExpired,
+      setIsLoadingRates,
+      setRates,
+      setRatesError,
+    ]
   );
 
   const fetchSupportedCurrencies = useCallback(
     async (forceRefresh = false) => {
-      if (!forceRefresh && !store.isSupportedCurrenciesCacheExpired()) return;
-      store.setIsLoadingSupportedCurrencies(true);
-      store.setSupportedCurrenciesError(null);
+      if (!forceRefresh && !isSupportedCurrenciesCacheExpired()) return;
+      setIsLoadingSupportedCurrencies(true);
+      setSupportedCurrenciesError(null);
       try {
         const data = await currencyService.getSupportedCurrencies();
-        store.setSupportedCurrencies(data.supportedCurrenciesMap);
+        setSupportedCurrencies(data.supportedCurrenciesMap);
       } catch (error) {
-        store.setSupportedCurrenciesError(
-          error instanceof Error ? error.message : "Failed to fetch currencies",
+        setSupportedCurrenciesError(
+          error instanceof Error ? error.message : "Failed to fetch currencies"
         );
       } finally {
-        store.setIsLoadingSupportedCurrencies(false);
+        setIsLoadingSupportedCurrencies(false);
       }
     },
-    [currencyService, store.isSupportedCurrenciesCacheExpired],
+    [
+      currencyService,
+      isSupportedCurrenciesCacheExpired,
+      setIsLoadingSupportedCurrencies,
+      setSupportedCurrencies,
+      setSupportedCurrenciesError,
+    ]
   );
 
   const convertCurrency = useCallback(
@@ -786,28 +724,265 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
         return await currencyService.convertCurrency(
           amount,
           fromCurrency,
-          toCurrency,
+          toCurrency
         );
       } catch (error) {
         console.error("Conversion failed", error);
         return null;
       }
     },
-    [currencyService],
+    [currencyService]
   );
 
+  // Auto-fetch on mount (after hydration)
   useEffect(() => {
-    if (!store.isHydrated) return;
-    if (autoFetchRates) fetchRates();
-    if (autoFetchSupportedCurrencies) fetchSupportedCurrencies();
+    if (!isHydrated) return;
+
+    if (autoFetchSupportedCurrencies && !supportedCurrenciesError) {
+      fetchSupportedCurrencies();
+    }
+
+    if (autoFetchRates && !ratesError) {
+      fetchRates();
+    }
   }, [
-    store.isHydrated,
+    isHydrated,
     autoFetchRates,
     autoFetchSupportedCurrencies,
     fetchRates,
     fetchSupportedCurrencies,
+    ratesError,
+    supportedCurrenciesError,
   ]);
 
-  return { ...store, fetchRates, fetchSupportedCurrencies, convertCurrency };
+  return {
+    ...store,
+    fetchRates,
+    fetchSupportedCurrencies,
+    convertCurrency,
+  };
 };
 ```
+
+---
+
+## 8. Number Formatting
+
+**File**: `utils/aevr/number-formatter.ts`
+
+```typescript
+import { getParamByParam } from "iso-country-currency";
+
+interface FormatCurrencyOptions {
+  currency?: string;
+  locale?: string;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  display?: "code" | "symbol" | "both";
+  symbolFirst?: boolean;
+}
+
+export function formatCurrency(
+  value: number | undefined | null,
+  options: FormatCurrencyOptions = {}
+): string {
+  const {
+    currency = "USD",
+    locale = "en-US",
+    minimumFractionDigits: minFD = 2,
+    maximumFractionDigits: maxFD = 5,
+    display = "symbol",
+    symbolFirst = true,
+  } = options;
+
+  let minimumFractionDigits = Math.max(0, minFD);
+  let maximumFractionDigits = Math.max(0, maxFD);
+
+  if (minimumFractionDigits > maximumFractionDigits) {
+    minimumFractionDigits = maximumFractionDigits;
+  }
+
+  try {
+    const formattedNumber = new Intl.NumberFormat(locale, {
+      style: "decimal",
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(value || 0);
+
+    let symbol = "";
+    if (display === "symbol" || display === "both") {
+      try {
+        const foundSymbol = getParamByParam("currency", currency, "symbol");
+        if (foundSymbol) symbol = foundSymbol;
+      } catch {
+        return `${currency} ${formattedNumber}`;
+      }
+    }
+
+    switch (display) {
+      case "symbol":
+        return symbol
+          ? `${symbol}${formattedNumber}`
+          : `${currency} ${formattedNumber}`;
+      case "both":
+        return symbol
+          ? symbolFirst
+            ? `${symbol} ${formattedNumber} (${currency})`
+            : `${currency} ${formattedNumber} (${symbol})`
+          : `${currency} ${formattedNumber}`;
+      case "code":
+      default:
+        return `${currency} ${formattedNumber}`;
+    }
+  } catch (error) {
+    console.error("Error formatting currency:", error);
+    return `${currency} ${(value || 0).toFixed(minimumFractionDigits)}`;
+  }
+}
+```
+
+### Usage Examples
+
+```typescript
+formatCurrency(1234.56, { currency: "USD" }); // "$1,234.56"
+formatCurrency(1234.56, { currency: "NGN" }); // "₦1,234.56"
+formatCurrency(1234.56, { currency: "EUR", display: "code" }); // "EUR 1,234.56"
+formatCurrency(1234.56, { currency: "GBP", display: "both" }); // "£ 1,234.56 (GBP)"
+```
+
+---
+
+## 9. Integration with Payments
+
+### Dynamic Pricing Example
+
+```typescript
+// In credits page
+const { baseCurrency, setBaseCurrency, rates, convertCurrency } = useCurrency();
+
+const [inputAmount, setInputAmount] = useState(1);
+const [calculatedCredits, setCalculatedCredits] = useState(80);
+
+// Effect to calculate credits when amount/currency changes
+useEffect(() => {
+  const calc = async () => {
+    if (!rates) return;
+
+    // Convert user's input to USD
+    const usdValue = await convertCurrency(inputAmount, baseCurrency, "USD");
+    if (usdValue === null) return;
+
+    // 1 USD = 80 Credits
+    const credits = Math.floor(usdValue * 80);
+    setCalculatedCredits(credits);
+  };
+
+  calc();
+}, [inputAmount, baseCurrency, rates, convertCurrency]);
+```
+
+### Currency Selector Component
+
+```tsx
+const CurrencySelector = () => {
+  const { baseCurrency, setBaseCurrency, supportedCurrencies } = useCurrency();
+  const currencyCodes = Object.keys(supportedCurrencies).sort();
+
+  return (
+    <select
+      value={baseCurrency}
+      onChange={(e) => setBaseCurrency(e.target.value)}
+    >
+      {currencyCodes.map((code) => (
+        <option key={code} value={code}>
+          {code} - {supportedCurrencies[code]?.currencyName}
+        </option>
+      ))}
+    </select>
+  );
+};
+```
+
+---
+
+## 10. Best Practices
+
+### 1. Hydration Handling
+
+Always wait for store hydration before making API calls:
+
+```typescript
+useEffect(() => {
+  if (!isHydrated) return; // Wait for localStorage rehydration
+  fetchRates();
+}, [isHydrated]);
+```
+
+### 2. Cache Management
+
+- **Rates**: 15-minute cache is optimal for real-time accuracy
+- **Supported Currencies**: 24-hour cache (rarely changes)
+- Use `forceRefresh` parameter when user explicitly requests update
+
+### 3. Error Handling
+
+```typescript
+const { ratesError, fetchRates } = useCurrency();
+
+if (ratesError) {
+  return (
+    <div>
+      <p>Failed to load rates: {ratesError}</p>
+      <button onClick={() => fetchRates(undefined, true)}>Retry</button>
+    </div>
+  );
+}
+```
+
+### 4. Loading States
+
+```typescript
+const { isLoadingRates } = useCurrency();
+
+return (
+  <div>
+    {isLoadingRates && <Spinner />}
+    <CurrencyDisplay />
+  </div>
+);
+```
+
+### 5. SSR Considerations
+
+- Store is only populated after client-side hydration
+- Use fallback values for server render
+- Avoid accessing `localStorage` during SSR
+
+### 6. API Rate Limiting
+
+CurrencyFreaks has rate limits. The caching strategy helps:
+
+- Don't fetch on every component mount
+- Use `isRatesCacheExpired()` check
+- Batch currency requests where possible
+
+---
+
+## Quick Reference
+
+| Function/Hook                       | Purpose                            |
+| ----------------------------------- | ---------------------------------- |
+| `useCurrency()`                     | Main hook for currency operations  |
+| `convertCurrency(amount, from, to)` | Convert between currencies         |
+| `formatCurrency(value, options)`    | Format number with currency symbol |
+| `fetchRates(symbols?, force?)`      | Refresh exchange rates             |
+| `setBaseCurrency(code)`             | Change user's base currency        |
+| `isRatesCacheExpired()`             | Check if rates need refresh        |
+
+| Store Property        | Purpose                                    |
+| --------------------- | ------------------------------------------ |
+| `rates`               | Current exchange rates object              |
+| `supportedCurrencies` | Map of all available currencies            |
+| `baseCurrency`        | User's preferred base currency             |
+| `isLoadingRates`      | Loading state for rates                    |
+| `isHydrated`          | Whether store has loaded from localStorage |
