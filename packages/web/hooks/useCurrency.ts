@@ -22,6 +22,21 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
     autoFetchSupportedCurrencies = true,
   } = config;
 
+  const {
+    baseCurrency,
+    ratesError,
+    supportedCurrenciesError,
+    isRatesCacheExpired,
+    isSupportedCurrenciesCacheExpired,
+    setIsLoadingRates,
+    setRates,
+    setRatesError,
+    setIsLoadingSupportedCurrencies,
+    setSupportedCurrencies,
+    setSupportedCurrenciesError,
+    isHydrated,
+  } = useCurrencyStore();
+
   const store = useCurrencyStore();
 
   // Stable service instance
@@ -32,55 +47,55 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
 
   const fetchRates = useCallback(
     async (symbols?: string, forceRefresh = false) => {
-      if (!forceRefresh && !store.isRatesCacheExpired()) return;
-      store.setIsLoadingRates(true);
-      store.setRatesError(null);
+      if (!forceRefresh && !isRatesCacheExpired()) return;
+      setIsLoadingRates(true);
+      setRatesError(null);
       try {
         const ratesData = await currencyService.getLatestRates(
           symbols,
-          store.baseCurrency
+          baseCurrency
         );
-        store.setRates(ratesData);
+        setRates(ratesData);
       } catch (error) {
-        store.setRatesError(
+        setRatesError(
           error instanceof Error ? error.message : "Failed to fetch rates"
         );
       } finally {
-        store.setIsLoadingRates(false);
+        setIsLoadingRates(false);
       }
     },
     [
       currencyService,
-      store.baseCurrency,
-      store.isRatesCacheExpired,
-      store.setIsLoadingRates,
-      store.setRates,
-      store.setRatesError,
+      baseCurrency,
+      isRatesCacheExpired,
+      setIsLoadingRates,
+      setRates,
+      setRatesError,
     ]
   );
 
   const fetchSupportedCurrencies = useCallback(
     async (forceRefresh = false) => {
-      if (!forceRefresh && !store.isSupportedCurrenciesCacheExpired()) return;
-      store.setIsLoadingSupportedCurrencies(true);
-      store.setSupportedCurrenciesError(null);
+      if (!forceRefresh && !isSupportedCurrenciesCacheExpired()) return;
+      setIsLoadingSupportedCurrencies(true);
+      setSupportedCurrenciesError(null);
       try {
         const data = await currencyService.getSupportedCurrencies();
-        store.setSupportedCurrencies(data.supportedCurrenciesMap);
+        setSupportedCurrencies(data.supportedCurrenciesMap);
       } catch (error) {
-        store.setSupportedCurrenciesError(
+        setSupportedCurrenciesError(
           error instanceof Error ? error.message : "Failed to fetch currencies"
         );
       } finally {
-        store.setIsLoadingSupportedCurrencies(false);
+        setIsLoadingSupportedCurrencies(false);
       }
     },
     [
       currencyService,
-      store.isSupportedCurrenciesCacheExpired,
-      store.setIsLoadingSupportedCurrencies,
-      store.setSupportedCurrencies,
-      store.setSupportedCurrenciesError,
+      isSupportedCurrenciesCacheExpired,
+      setIsLoadingSupportedCurrencies,
+      setSupportedCurrencies,
+      setSupportedCurrenciesError,
     ]
   );
 
@@ -101,23 +116,23 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
   );
 
   useEffect(() => {
-    if (!store.isHydrated) return;
+    if (!isHydrated) return;
 
-    if (autoFetchSupportedCurrencies && !store.supportedCurrenciesError) {
+    if (autoFetchSupportedCurrencies && !supportedCurrenciesError) {
       fetchSupportedCurrencies();
     }
 
-    if (autoFetchRates && !store.ratesError) {
+    if (autoFetchRates && !ratesError) {
       fetchRates();
     }
   }, [
-    store.isHydrated,
+    isHydrated,
     autoFetchRates,
     autoFetchSupportedCurrencies,
     fetchRates,
     fetchSupportedCurrencies,
-    store.ratesError,
-    store.supportedCurrenciesError,
+    ratesError,
+    supportedCurrenciesError,
   ]);
 
   return {

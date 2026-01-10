@@ -24,7 +24,7 @@ export function formatCurrency(
   } = options;
 
   let minimumFractionDigits = minFD < 0 ? 0 : minFD;
-  let maximumFractionDigits = maxFD < 0 ? 0 : maxFD;
+  const maximumFractionDigits = maxFD < 0 ? 0 : maxFD;
 
   if (minimumFractionDigits > maximumFractionDigits) {
     minimumFractionDigits = maximumFractionDigits;
@@ -71,4 +71,109 @@ export function formatCurrency(
       Math.max(0, minimumFractionDigits)
     )}`;
   }
+}
+
+export function formatNumber(
+  value: number,
+  options: FormatCurrencyOptions = {}
+): string {
+  const {
+    locale = "en-US",
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 5,
+  } = options;
+
+  try {
+    // Format the number first
+    const formattedNumber = new Intl.NumberFormat(locale, {
+      style: "decimal",
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(value);
+
+    return formattedNumber;
+  } catch (error) {
+    logger.error("🚫 Something went wrong while formatting number:", error);
+    // Ultimate fallback
+    return value.toFixed(minimumFractionDigits);
+  }
+}
+
+export interface FormatOptions {
+  mask?: boolean;
+  maskChar?: string;
+  maskCount?: number;
+  spacing?: number;
+  separator?: string;
+  customPattern?: string | null;
+}
+
+export function formatCardNumber(
+  input: string | number,
+  options: FormatOptions = {}
+): string {
+  const {
+    mask = false,
+    maskChar = "*",
+    maskCount = 12,
+    spacing = 4,
+    separator = " ",
+    customPattern = null,
+  } = options;
+
+  // Convert input to string and remove any existing separators
+  const cleanInput = String(input).replace(/\D/g, "");
+
+  // Handle masking (for card numbers)
+  if (mask) {
+    let masked: string;
+
+    if (cleanInput.length <= 4) {
+      // For short inputs (like "3456"), create full card format with masking
+      masked = maskChar.repeat(maskCount) + cleanInput.padStart(4, "0");
+    } else {
+      // For longer inputs, take last 4 digits and mask the rest
+      const lastFour = cleanInput.slice(-4);
+      masked = maskChar.repeat(maskCount) + lastFour;
+    }
+
+    // Apply formatting to masked string
+    return applyFormatting(masked, spacing, separator, customPattern);
+  }
+
+  // Apply formatting to original input
+  return applyFormatting(cleanInput, spacing, separator, customPattern);
+}
+
+function applyFormatting(
+  str: string,
+  spacing: number,
+  separator: string,
+  customPattern: string | null
+): string {
+  if (customPattern) {
+    // Custom pattern formatting (e.g., "XXXX-XXXX-XXXX-XXXX")
+    let result = "";
+    let strIndex = 0;
+
+    for (let i = 0; i < customPattern.length && strIndex < str.length; i++) {
+      if (customPattern[i] === "X") {
+        result += str[strIndex++];
+      } else {
+        result += customPattern[i];
+      }
+    }
+
+    // Add remaining digits if any
+    if (strIndex < str.length) {
+      result += str.slice(strIndex);
+    }
+
+    return result;
+  }
+
+  // Default spacing formatting
+  return str
+    .replace(new RegExp(`(.{${spacing}})`, "g"), `$1${separator}`)
+    .trim();
 }
