@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
+import dbConnect from "@/lib/db";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,7 +11,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const transaction = await WalletTransaction.findOne({
+    await dbConnect();
+
+    const transaction = await Transaction.findOne({
       providerReference: reference,
     });
     if (!transaction) {
@@ -23,6 +26,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       status: transaction.status,
       amount: transaction.amount,
+      credits: transaction.amount, // For CREDITS wallet, amount = credits
+      symbol: transaction.symbol,
     });
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

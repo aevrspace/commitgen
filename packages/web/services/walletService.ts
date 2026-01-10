@@ -1,4 +1,5 @@
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
+import { Wallet } from "@/models/Wallet";
 import { CreditUsage } from "@/models/CreditUsage";
 import { nanoid } from "nanoid";
 import { logger } from "@untools/logger";
@@ -7,6 +8,9 @@ import mongoose from "mongoose";
 interface UsageMetadata {
   model?: string;
   diffLength?: number;
+  processedDiffLength?: number;
+  estimatedTokens?: number;
+  tier?: string;
   promptTokens?: number;
   completionTokens?: number;
   responseLength?: number;
@@ -15,6 +19,8 @@ interface UsageMetadata {
   ipAddress?: string;
   apiKeyUsed?: string;
   description?: string;
+  wasTruncated?: boolean;
+  filesChanged?: number;
 }
 
 interface DebitOptions {
@@ -26,6 +32,8 @@ interface DebitOptions {
 interface CreditOptions {
   credits: number;
   providerReference: string;
+  channel: "100pay" | "paystack" | "internal" | "system";
+  category?: "deposit" | "bonus";
   amount?: number;
   fee?: number;
   metadata?: Record<string, unknown>;
@@ -35,43 +43,25 @@ interface CreditOptions {
  * WalletService
  *
  * Manages credit wallet operations with real-time balance calculation.
- * All credits are tracked through WalletTransaction entries, and usage
+ * All credits are tracked through Transaction entries, and usage
  * is linked to CreditUsage for audit purposes.
  */
 class WalletService {
   /**
+   * Get or create a CREDITS wallet for a user.
+   */
+  async getCreditsWallet(userId: string) {
+    return await Wallet.getOrCreate(userId, "CREDITS");
+  }
+
+  /**
    * Get the current credit balance for a user.
-   * Calculated in real-time from confirmed transactions.
+   * Calculated in real-time from successful transactions.
    */
   async getBalance(userId: string): Promise<number> {
     try {
-      // Convert string to ObjectId for proper MongoDB comparison
-      const userObjectId = new mongoose.Types.ObjectId(userId);
-
-      const result = await WalletTransaction.aggregate([
-        {
-          $match: {
-            userId: userObjectId,
-            status: "confirmed",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalCredits: {
-              $sum: {
-                $cond: [
-                  { $in: ["$type", ["credit", "deposit"]] },
-                  "$credits",
-                  { $multiply: ["$credits", -1] }, // Debit is negative
-                ],
-              },
-            },
-          },
-        },
-      ]);
-
-      return result.length > 0 ? result[0].totalCredits : 0;
+      const wallet = await this.getCreditsWallet(userId);
+      return await Wallet.getBalance(wallet._id);
     } catch (error) {
       logger?.error("[WalletService] Failed to get balance:", error);
       throw error;
@@ -94,10 +84,13 @@ class WalletService {
     userId: string,
     options: DebitOptions
   ): Promise<{
-    transaction: typeof WalletTransaction.prototype;
+    transaction: typeof Transaction.prototype;
     usage: typeof CreditUsage.prototype;
   }> {
     const { type, creditsUsed = 1, metadata = {} } = options;
+
+    // Get or create wallet
+    const wallet = await this.getCreditsWallet(userId);
 
     // 1. Create CreditUsage entry
     const usage = await CreditUsage.create({
@@ -111,13 +104,16 @@ class WalletService {
     });
 
     // 2. Create debit transaction
-    const transaction = await WalletTransaction.create({
-      userId,
+    const transaction = await Transaction.create({
+      user: userId,
+      wallet: wallet._id,
       type: "debit",
-      credits: creditsUsed,
-      amount: 0,
+      status: "successful", // Debits are confirmed immediately
+      symbol: "CREDITS",
+      category: "usage",
+      channel: "internal",
+      amount: creditsUsed,
       fee: 0,
-      status: "confirmed", // Debits are confirmed immediately
       providerReference: `usage-${usage._id.toString()}`,
       usageRef: usage._id,
       metadata: {
@@ -144,22 +140,30 @@ class WalletService {
   async credit(
     userId: string,
     options: CreditOptions
-  ): Promise<typeof WalletTransaction.prototype> {
+  ): Promise<typeof Transaction.prototype> {
     const {
       credits,
       providerReference,
+      channel,
+      category = "deposit",
       amount = 0,
       fee = 0,
       metadata = {},
     } = options;
 
-    const transaction = await WalletTransaction.create({
-      userId,
+    // Get or create wallet
+    const wallet = await this.getCreditsWallet(userId);
+
+    const transaction = await Transaction.create({
+      user: userId,
+      wallet: wallet._id,
       type: "credit",
-      credits,
-      amount,
+      status: "successful",
+      symbol: "CREDITS",
+      category,
+      channel,
+      amount: credits,
       fee,
-      status: "confirmed",
       providerReference,
       metadata,
     });
@@ -177,22 +181,30 @@ class WalletService {
   async createPendingCredit(
     userId: string,
     options: CreditOptions
-  ): Promise<typeof WalletTransaction.prototype> {
+  ): Promise<typeof Transaction.prototype> {
     const {
       credits,
       providerReference,
+      channel,
+      category = "deposit",
       amount = 0,
       fee = 0,
       metadata = {},
     } = options;
 
-    const transaction = await WalletTransaction.create({
-      userId,
+    // Get or create wallet
+    const wallet = await this.getCreditsWallet(userId);
+
+    const transaction = await Transaction.create({
+      user: userId,
+      wallet: wallet._id,
       type: "credit",
-      credits,
-      amount,
-      fee,
       status: "pending",
+      symbol: "CREDITS",
+      category,
+      channel,
+      amount: credits,
+      fee,
       providerReference,
       metadata,
     });
@@ -210,8 +222,8 @@ class WalletService {
   async confirmTransaction(
     providerReference: string,
     additionalMetadata?: Record<string, unknown>
-  ): Promise<typeof WalletTransaction.prototype | null> {
-    const transaction = await WalletTransaction.findOne({ providerReference });
+  ): Promise<typeof Transaction.prototype | null> {
+    const transaction = await Transaction.findOne({ providerReference });
 
     if (!transaction) {
       logger?.warn(
@@ -220,14 +232,14 @@ class WalletService {
       return null;
     }
 
-    if (transaction.status === "confirmed") {
+    if (transaction.status === "successful") {
       logger?.info(
         `[WalletService] Transaction already confirmed: ${providerReference}`
       );
       return transaction;
     }
 
-    transaction.status = "confirmed";
+    transaction.status = "successful";
     if (additionalMetadata) {
       transaction.metadata = { ...transaction.metadata, ...additionalMetadata };
     }
@@ -243,28 +255,38 @@ class WalletService {
    */
   async getHistory(
     userId: string,
-    options: { page?: number; limit?: number; type?: string } = {}
+    options: {
+      page?: number;
+      limit?: number;
+      type?: string;
+      symbol?: string;
+    } = {}
   ): Promise<{
-    transactions: (typeof WalletTransaction.prototype)[];
+    transactions: (typeof Transaction.prototype)[];
     total: number;
     page: number;
     limit: number;
   }> {
-    const { page = 1, limit = 20, type } = options;
+    const { page = 1, limit = 20, type, symbol } = options;
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = { userId };
+    const query: Record<string, unknown> = {
+      user: new mongoose.Types.ObjectId(userId),
+    };
     if (type) {
       query.type = type;
     }
+    if (symbol) {
+      query.symbol = symbol;
+    }
 
     const [transactions, total] = await Promise.all([
-      WalletTransaction.find(query)
+      Transaction.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate("usageRef"),
-      WalletTransaction.countDocuments(query),
+      Transaction.countDocuments(query),
     ]);
 
     return { transactions, total, page, limit };

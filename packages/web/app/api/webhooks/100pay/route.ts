@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
+import { Wallet } from "@/models/Wallet";
 import { createWebhookEventLogger } from "@/services/webhookEventLogger";
+import dbConnect from "@/lib/db";
 
 export async function POST(request: Request) {
   const verificationToken = request.headers.get("verification-token");
@@ -22,22 +24,32 @@ export async function POST(request: Request) {
   });
 
   try {
+    await dbConnect();
+
     if (event.type === "credit") {
       const reference = event.data.charge.metadata.ref_id;
 
       // 2. Find and update Transaction
-      const transaction = await WalletTransaction.findOne({
+      const transaction = await Transaction.findOne({
         providerReference: reference,
       });
 
-      if (transaction && transaction.status !== "confirmed") {
-        // Get credits from metadata (set during payment initialization)
-        const creditsToCredit = transaction.metadata?.credits || 0;
+      if (transaction && transaction.status !== "successful") {
+        // Get credits from metadata or amount field
+        const creditsToCredit =
+          transaction.metadata?.credits || transaction.amount || 0;
 
-        // Update transaction status and set credits
-        transaction.status = "confirmed";
+        // Ensure wallet exists
+        const wallet = await Wallet.getOrCreate(transaction.user, "CREDITS");
+        transaction.wallet = wallet._id;
+
+        // Update transaction with new schema properties
+        transaction.status = "successful";
         transaction.type = "credit";
-        transaction.credits = creditsToCredit;
+        transaction.symbol = "CREDITS";
+        transaction.category = "deposit";
+        transaction.channel = "100pay";
+        transaction.amount = creditsToCredit;
 
         // Enrich with customer data
         if (event.data.charge?.customer) {
@@ -57,9 +69,6 @@ export async function POST(request: Request) {
         }
 
         await transaction.save();
-
-        // Credits are now tracked via WalletTransaction.credits field
-        // Balance is computed from transactions, no need to update User.credits
 
         eventLogger.linkTransaction(transaction._id.toString());
         eventLogger.success(

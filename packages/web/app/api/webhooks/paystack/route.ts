@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
+import { Wallet } from "@/models/Wallet";
 import { createWebhookEventLogger } from "@/services/webhookEventLogger";
+import dbConnect from "@/lib/db";
 
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY!;
@@ -26,13 +28,15 @@ export async function POST(request: Request) {
   });
 
   try {
+    await dbConnect();
+
     if (event.event === "charge.success") {
       const reference = event.data.reference;
 
       // 2. Idempotency Check
-      const existing = await WalletTransaction.findOne({
+      const existing = await Transaction.findOne({
         providerReference: reference,
-        status: "confirmed",
+        status: "successful",
       });
 
       if (existing) {
@@ -41,18 +45,26 @@ export async function POST(request: Request) {
       }
 
       // 3. Find and confirm the transaction
-      const transaction = await WalletTransaction.findOne({
+      const transaction = await Transaction.findOne({
         providerReference: reference,
       });
 
       if (transaction) {
-        // Get credits from metadata (set during payment initialization)
-        const creditsToCredit = transaction.metadata?.credits || 0;
+        // Get credits from metadata or amount field
+        const creditsToCredit =
+          transaction.metadata?.credits || transaction.amount || 0;
 
-        // Update transaction status and enrich with customer data
-        transaction.status = "confirmed";
-        transaction.type = "credit"; // Ensure it's a credit type
-        transaction.credits = creditsToCredit;
+        // Ensure wallet exists
+        const wallet = await Wallet.getOrCreate(transaction.user, "CREDITS");
+        transaction.wallet = wallet._id;
+
+        // Update transaction with new schema properties
+        transaction.status = "successful";
+        transaction.type = "credit";
+        transaction.symbol = "CREDITS";
+        transaction.category = "deposit";
+        transaction.channel = "paystack";
+        transaction.amount = creditsToCredit;
 
         if (event.data.customer) {
           transaction.metadata = {
@@ -71,9 +83,6 @@ export async function POST(request: Request) {
         }
 
         await transaction.save();
-
-        // Credits are now tracked via WalletTransaction.credits field
-        // Balance is computed from transactions, no need to update User.credits
 
         eventLogger.linkTransaction(transaction._id.toString());
         eventLogger.success(

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import AuthToken from "@/models/AuthToken";
-import { WalletTransaction } from "@/models/WalletTransaction";
-import {
-  initializePaystackPayment,
-  CREDITS_PER_USD,
-  // USD_TO_NGN_RATE, // Deprecated in favor of dynamic
-} from "@/lib/payment";
+import { Transaction } from "@/models/Transaction";
+import { Wallet } from "@/models/Wallet";
+import { initializePaystackPayment, CREDITS_PER_USD } from "@/lib/payment";
 import { nanoid } from "nanoid";
+import crypto from "crypto";
 import User from "@/models/User";
 import { createCurrencyService } from "@/utils/currency/currency.service";
 import { HttpClient } from "@/utils/shared/httpClient";
@@ -68,18 +65,28 @@ export async function POST(request: NextRequest) {
 
     const priceInNgn = priceInUsd * ngnRate;
 
+    // Get or create CREDITS wallet
+    const wallet = await Wallet.getOrCreate(userId, "CREDITS");
+
     // For 100Pay, create pending credit transaction
     if (provider === "100pay") {
       const reference = nanoid();
-      await WalletTransaction.create({
-        userId,
-        type: "credit", // Credit type for deposits
-        credits: amountOfCredits, // Store credits directly
-        amount: priceInNgn, // Monetary amount
-        fee: 0,
+      await Transaction.create({
+        user: userId,
+        wallet: wallet._id,
+        type: "credit",
         status: "pending",
+        symbol: "CREDITS",
+        category: "deposit",
+        channel: "100pay",
+        amount: amountOfCredits,
+        fee: 0,
         providerReference: reference,
-        metadata: { provider: "100pay", priceInNgn },
+        metadata: {
+          provider: "100pay",
+          priceInNgn,
+          credits: amountOfCredits,
+        },
       });
 
       return NextResponse.json({
@@ -101,17 +108,22 @@ export async function POST(request: NextRequest) {
     const reference = crypto.randomBytes(16).toString("hex");
 
     // Paystack - Create Pending Credit Transaction
-    await WalletTransaction.create({
-      userId,
-      type: "credit", // Credit type for deposits
-      credits: amountOfCredits, // Store credits directly
-      amount: finalChargeAmount, // Total monetary amount charged
-      fee: fee, // The fee portion
+    await Transaction.create({
+      user: userId,
+      wallet: wallet._id,
+      type: "credit",
       status: "pending",
+      symbol: "CREDITS",
+      category: "deposit",
+      channel: "paystack",
+      amount: amountOfCredits,
+      fee: fee,
       providerReference: reference,
       metadata: {
         provider: "paystack",
         netAmount: priceInNgn,
+        chargeAmount: finalChargeAmount,
+        credits: amountOfCredits,
       },
     });
 

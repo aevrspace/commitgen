@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import AuthToken from "@/models/AuthToken";
 import User from "@/models/User";
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
 import { CreditUsage } from "@/models/CreditUsage";
 import { createWalletService } from "@/services/walletService";
 
@@ -59,27 +59,29 @@ export async function GET(req: NextRequest) {
       recentTransactions,
       usageByDay,
     ] = await Promise.all([
-      // Total credits added (confirmed credits)
-      WalletTransaction.aggregate([
+      // Total credits added (successful credits)
+      Transaction.aggregate([
         {
           $match: {
-            userId: authToken.userId,
-            status: "confirmed",
-            type: { $in: ["credit", "deposit"] },
+            user: authToken.userId,
+            status: "successful",
+            type: "credit",
+            symbol: "CREDITS",
           },
         },
-        { $group: { _id: null, total: { $sum: "$credits" } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       // Total credits used (debits)
-      WalletTransaction.aggregate([
+      Transaction.aggregate([
         {
           $match: {
-            userId: authToken.userId,
-            status: "confirmed",
+            user: authToken.userId,
+            status: "successful",
             type: "debit",
+            symbol: "CREDITS",
           },
         },
-        { $group: { _id: null, total: { $sum: "$credits" } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       // Last 7 days usage count
       CreditUsage.countDocuments({
@@ -97,7 +99,7 @@ export async function GET(req: NextRequest) {
         .limit(10)
         .lean(),
       // Recent transactions (last 10)
-      WalletTransaction.find({ userId: authToken.userId, status: "confirmed" })
+      Transaction.find({ user: authToken.userId, status: "successful" })
         .sort({ createdAt: -1 })
         .limit(10)
         .lean(),

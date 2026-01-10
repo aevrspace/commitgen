@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
 import AuthToken from "@/models/AuthToken";
-import { WalletTransaction } from "@/models/WalletTransaction";
+import { Transaction } from "@/models/Transaction";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const transactions = await WalletTransaction.find({ userId })
+    const transactions = await Transaction.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await WalletTransaction.countDocuments({ userId });
+    const total = await Transaction.countDocuments({ user: userId });
 
     return NextResponse.json({
       data: transactions,
