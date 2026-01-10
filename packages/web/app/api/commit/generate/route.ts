@@ -5,6 +5,7 @@ import AuthToken from "@/models/AuthToken";
 import { createProvider } from "@untools/ai-toolkit";
 import { createWalletService } from "@/services/walletService";
 import { processDiff } from "@/utils/diff/processor";
+import { calculateCreditsForDiff } from "@/utils/credits/calculator";
 import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
@@ -38,18 +39,6 @@ export async function POST(req: NextRequest) {
     const user: any = authToken.userId;
     const walletService = createWalletService();
 
-    // Check balance using wallet service + legacy credits
-    const walletBalance = await walletService.getBalance(user._id.toString());
-    const legacyCredits = user.credits || 0;
-    const totalCredits = walletBalance + legacyCredits;
-
-    if (totalCredits < 1) {
-      return NextResponse.json(
-        { error: "Insufficient credits", credits: totalCredits },
-        { status: 403 }
-      );
-    }
-
     const { diff, model = "llama-3.1-8b-instant" } = await req.json();
 
     if (!diff) {
@@ -58,6 +47,30 @@ export async function POST(req: NextRequest) {
 
     // Process diff if too large
     const processed = processDiff(diff);
+
+    // Calculate credits based on processed diff size
+    const {
+      credits: creditsRequired,
+      tokens,
+      tier,
+    } = calculateCreditsForDiff(processed.content);
+
+    // Check balance using wallet service + legacy credits
+    const walletBalance = await walletService.getBalance(user._id.toString());
+    const legacyCredits = user.credits || 0;
+    const totalCredits = walletBalance + legacyCredits;
+
+    if (totalCredits < creditsRequired) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          credits: totalCredits,
+          required: creditsRequired,
+          tier: tier.name,
+        },
+        { status: 403 }
+      );
+    }
 
     // Initialize AI Provider
     const provider = createProvider({
@@ -89,13 +102,16 @@ Only return the commit message, nothing else.${
       throw new Error("Failed to generate text");
     }
 
-    // Debit credit using wallet service
+    // Debit credits based on volume (tier-based pricing)
     await walletService.debit(user._id.toString(), {
       type: "commit_generation",
-      creditsUsed: 1,
+      creditsUsed: creditsRequired,
       metadata: {
         model,
         diffLength: diff.length,
+        processedDiffLength: processed.content.length,
+        estimatedTokens: tokens,
+        tier: tier.name,
         responseLength: result.text.length,
         requestId,
         userAgent: req.headers.get("user-agent") || undefined,
@@ -104,18 +120,27 @@ Only return the commit message, nothing else.${
           req.headers.get("x-real-ip") ||
           undefined,
         apiKeyUsed: token.substring(0, 8) + "...",
+        wasTruncated: processed.stats.isTruncated,
+        filesChanged: processed.stats.totalFiles,
       },
     });
 
     // Get updated balance
-    const creditsRemaining = await walletService.getBalance(
-      user._id.toString()
-    );
+    const creditsRemaining =
+      (await walletService.getBalance(user._id.toString())) +
+      (user.credits || 0);
 
     return NextResponse.json({
       success: true,
       message: result.text,
+      creditsUsed: creditsRequired,
       creditsRemaining,
+      usage: {
+        tier: tier.name,
+        tokens,
+        filesChanged: processed.stats.totalFiles,
+        wasTruncated: processed.stats.isTruncated,
+      },
       requestId,
     });
   } catch (error) {

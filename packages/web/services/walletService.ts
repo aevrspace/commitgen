@@ -7,6 +7,9 @@ import mongoose from "mongoose";
 interface UsageMetadata {
   model?: string;
   diffLength?: number;
+  processedDiffLength?: number;
+  estimatedTokens?: number;
+  tier?: string;
   promptTokens?: number;
   completionTokens?: number;
   responseLength?: number;
@@ -15,6 +18,8 @@ interface UsageMetadata {
   ipAddress?: string;
   apiKeyUsed?: string;
   description?: string;
+  wasTruncated?: boolean;
+  filesChanged?: number;
 }
 
 interface DebitOptions {
