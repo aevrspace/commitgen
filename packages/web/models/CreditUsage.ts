@@ -33,7 +33,7 @@ const CreditUsageSchema = new Schema({
     // Additional context
     description: String,
   },
-  transactionRef: { type: Schema.Types.ObjectId, ref: "WalletTransaction" },
+  transactionRef: { type: Schema.Types.ObjectId, ref: "Transaction" },
   createdAt: { type: Date, default: Date.now },
 });
 

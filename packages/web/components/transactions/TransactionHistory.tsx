@@ -11,6 +11,9 @@ interface Transaction {
   fee: number;
   status: string;
   type: string;
+  symbol: string;
+  category: string;
+  channel?: string;
   providerReference: string;
   createdAt: string;
   metadata?: {
@@ -64,6 +67,36 @@ export function TransactionHistory() {
     return <div className="text-sm text-neutral-500">No transactions yet.</div>;
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "successful":
+        return "bg-green-500";
+      case "pending":
+        return "bg-yellow-500";
+      case "failed":
+        return "bg-red-500";
+      case "reversed":
+        return "bg-orange-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getStatusBadgeStyles = (status: string) => {
+    switch (status) {
+      case "successful":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "failed":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      case "reversed":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+    }
+  };
+
   return (
     <>
       <div className="rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950 overflow-hidden">
@@ -82,16 +115,13 @@ export function TransactionHistory() {
               <div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`inline-block h-2 w-2 rounded-full ${
-                      tx.status === "confirmed"
-                        ? "bg-green-500"
-                        : tx.status === "pending"
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                    }`}
+                    className={`inline-block h-2 w-2 rounded-full ${getStatusColor(
+                      tx.status
+                    )}`}
                   />
                   <p className="font-medium text-neutral-900 dark:text-neutral-100 capitalize">
-                    {tx.type} ({tx.metadata?.provider || "N/A"})
+                    {tx.category} (
+                    {tx.channel || tx.metadata?.provider || "N/A"})
                   </p>
                 </div>
                 <p className="text-sm text-neutral-500">
@@ -99,14 +129,21 @@ export function TransactionHistory() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {formatCurrency(tx.amount + (tx.fee || 0), {
-                    currency: "NGN",
-                  })}
+                <p
+                  className={`font-medium ${
+                    tx.type === "credit"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {tx.type === "credit" ? "+" : "-"}
+                  {tx.amount} {tx.symbol}
                 </p>
-                <p className="text-xs text-neutral-500">
-                  {tx.metadata?.credits} Credits
-                </p>
+                {tx.symbol === "CREDITS" && (
+                  <p className="text-xs text-neutral-500">
+                    {tx.amount} Credits
+                  </p>
+                )}
               </div>
             </div>
           ))}
@@ -139,13 +176,9 @@ export function TransactionHistory() {
                   Status
                 </label>
                 <div
-                  className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-                    selectedTx.status === "confirmed"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : selectedTx.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                  }`}
+                  className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${getStatusBadgeStyles(
+                    selectedTx.status
+                  )}`}
                 >
                   {selectedTx.status}
                 </div>
@@ -157,9 +190,12 @@ export function TransactionHistory() {
                     Amount Paid
                   </label>
                   <div className="text-lg font-medium">
-                    {formatCurrency(selectedTx.amount + (selectedTx.fee || 0), {
-                      currency: "NGN",
-                    })}
+                    {selectedTx.metadata?.chargeAmount
+                      ? formatCurrency(
+                          selectedTx.metadata.chargeAmount as number,
+                          { currency: "NGN" }
+                        )
+                      : `${selectedTx.amount} ${selectedTx.symbol}`}
                   </div>
                 </div>
                 <div>
@@ -167,7 +203,28 @@ export function TransactionHistory() {
                     Credits Received
                   </label>
                   <div className="text-lg font-medium text-indigo-600 dark:text-indigo-400">
-                    {selectedTx.metadata?.credits || 0}
+                    {selectedTx.amount}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-neutral-500">
+                    Category
+                  </label>
+                  <div className="text-sm font-medium capitalize">
+                    {selectedTx.category}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-neutral-500">
+                    Channel
+                  </label>
+                  <div className="text-sm font-medium capitalize">
+                    {selectedTx.channel ||
+                      selectedTx.metadata?.provider ||
+                      "N/A"}
                   </div>
                 </div>
               </div>

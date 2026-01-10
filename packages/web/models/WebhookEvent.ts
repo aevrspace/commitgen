@@ -18,7 +18,7 @@ const WebhookEventSchema = new Schema({
   ],
   relatedTransactionId: {
     type: Schema.Types.ObjectId,
-    ref: "WalletTransaction",
+    ref: "Transaction",
   },
   createdAt: { type: Date, default: Date.now },
 });
