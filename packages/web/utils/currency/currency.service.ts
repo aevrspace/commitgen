@@ -46,7 +46,7 @@ export class CurrencyService {
 
   async getLatestRates(
     symbols?: string,
-    base: string = "USD"
+    _base: string = "USD"
   ): Promise<CurrencyRatesResponse> {
     try {
       const params = new URLSearchParams({

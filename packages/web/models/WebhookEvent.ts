@@ -6,7 +6,7 @@ const WebhookEventSchema = new Schema({
   payload: { type: Schema.Types.Mixed, required: true },
   processingStatus: {
     type: String,
-    enum: ["received", "processed", "failed"],
+    enum: ["received", "processing", "processed", "failed"],
     default: "received",
   },
   processingHistory: [
