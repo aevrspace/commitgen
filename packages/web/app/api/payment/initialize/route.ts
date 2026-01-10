@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     // Fetch Dynamic Rate
     let ngnRate = 1500; // Fallback
     try {
-      const rates = await currencyService.getLatestRates("NGN", "USD");
+      const rates = await currencyService.getLatestRates("NGN");
       if (rates.rates["NGN"]) {
         ngnRate = parseFloat(rates.rates["NGN"]);
       }

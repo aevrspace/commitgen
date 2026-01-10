@@ -51,10 +51,7 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
       setIsLoadingRates(true);
       setRatesError(null);
       try {
-        const ratesData = await currencyService.getLatestRates(
-          symbols,
-          baseCurrency
-        );
+        const ratesData = await currencyService.getLatestRates(symbols);
         setRates(ratesData);
       } catch (error) {
         setRatesError(
@@ -66,7 +63,6 @@ export const useCurrency = (config: UseCurrencyConfig = {}) => {
     },
     [
       currencyService,
-      baseCurrency,
       isRatesCacheExpired,
       setIsLoadingRates,
       setRates,

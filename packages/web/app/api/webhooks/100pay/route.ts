@@ -13,14 +13,21 @@ export async function POST(request: Request) {
 
   const event = await request.json();
 
-  // 1b. Log Event
-  const webhookEvent = await WebhookEvent.create({
-    provider: "100pay",
-    eventType: event.type,
-    payload: event,
-    processingStatus: "processing",
-    processingHistory: [{ status: "processing", message: "Token verified" }],
-  });
+  // 1b. Log Event (Non-blocking / Safe)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let webhookEvent: any = null;
+  try {
+    webhookEvent = await WebhookEvent.create({
+      provider: "100pay",
+      eventType: event.type,
+      payload: event,
+      processingStatus: "processing",
+      processingHistory: [{ status: "processing", message: "Token verified" }],
+    });
+  } catch (error) {
+    console.error("Failed to create webhook event log:", error);
+    // Continue processing
+  }
 
   try {
     // Check event type - docs say 'charge.completed' or similar?
@@ -65,49 +72,63 @@ export async function POST(request: Request) {
           );
         }
 
-        webhookEvent.relatedTransactionId = transaction._id;
-        webhookEvent.processingStatus = "processed";
-        webhookEvent.processingHistory.push({
-          status: "success",
-          message: "Transaction confirmed and credits added",
-        });
+        if (webhookEvent) {
+          webhookEvent.relatedTransactionId = transaction._id;
+          webhookEvent.processingStatus = "processed";
+          webhookEvent.processingHistory.push({
+            status: "success",
+            message: "Transaction confirmed and credits added",
+          });
+        }
       } else if (transaction) {
-        webhookEvent.relatedTransactionId = transaction._id;
+        if (webhookEvent) {
+          webhookEvent.relatedTransactionId = transaction._id;
+          webhookEvent.processingStatus = "processed";
+          webhookEvent.processingHistory.push({
+            status: "skipped",
+            message: "Transaction already confirmed",
+          });
+        }
+      } else {
+        if (webhookEvent) {
+          webhookEvent.processingStatus = "failed";
+          webhookEvent.processingHistory.push({
+            status: "failed",
+            message: "Transaction reference not found",
+          });
+        }
+      }
+    } else {
+      if (webhookEvent) {
         webhookEvent.processingStatus = "processed";
         webhookEvent.processingHistory.push({
-          status: "skipped",
-          message: "Transaction already confirmed",
+          status: "ignored",
+          message: "Event type not handled",
+        });
+      }
+    }
+  } catch (error) {
+    if (webhookEvent) {
+      if (error instanceof Error) {
+        webhookEvent.processingStatus = "failed";
+        webhookEvent.processingHistory.push({
+          status: "error",
+          message: error.message,
         });
       } else {
         webhookEvent.processingStatus = "failed";
         webhookEvent.processingHistory.push({
-          status: "failed",
-          message: "Transaction reference not found",
+          status: "error",
+          message: "Unknown error",
         });
       }
-    } else {
-      webhookEvent.processingStatus = "processed";
-      webhookEvent.processingHistory.push({
-        status: "ignored",
-        message: "Event type not handled",
-      });
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      webhookEvent.processingStatus = "failed";
-      webhookEvent.processingHistory.push({
-        status: "error",
-        message: error.message,
-      });
-    } else {
-      webhookEvent.processingStatus = "failed";
-      webhookEvent.processingHistory.push({
-        status: "error",
-        message: "Unknown error",
-      });
     }
   }
 
-  await webhookEvent.save();
+  if (webhookEvent) {
+    await webhookEvent
+      .save()
+      .catch((e: unknown) => console.error("Final webhook save failed:", e));
+  }
   return NextResponse.json({ received: true });
 }
