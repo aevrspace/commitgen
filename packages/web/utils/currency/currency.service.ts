@@ -45,8 +45,9 @@ export class CurrencyService {
   }
 
   async getLatestRates(
-    symbols?: string,
-    _base: string = "USD"
+    symbols?: string
+    // Base is ignored for free plan (defaults to USD)
+    // base: string = "USD"
   ): Promise<CurrencyRatesResponse> {
     try {
       const params = new URLSearchParams({

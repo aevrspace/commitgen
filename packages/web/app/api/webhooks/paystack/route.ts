@@ -16,16 +16,23 @@ export async function POST(request: Request) {
 
   const event = JSON.parse(body);
 
-  // 1b. Log Event
-  const webhookEvent = await WebhookEvent.create({
-    provider: "paystack",
-    eventType: event.event,
-    payload: event,
-    processingStatus: "processing",
-    processingHistory: [
-      { status: "processing", message: "Signature verified" },
-    ],
-  });
+  // 1b. Log Event (Non-blocking / Safe)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let webhookEvent: any = null;
+  try {
+    webhookEvent = await WebhookEvent.create({
+      provider: "paystack",
+      eventType: event.event,
+      payload: event,
+      processingStatus: "processing",
+      processingHistory: [
+        { status: "processing", message: "Signature verified" },
+      ],
+    });
+  } catch (error) {
+    console.error("Failed to create webhook event log:", error);
+    // Continue processing even if logging fails
+  }
 
   try {
     if (event.event === "charge.success") {
@@ -37,12 +44,18 @@ export async function POST(request: Request) {
         status: "confirmed",
       });
       if (existing) {
-        webhookEvent.processingStatus = "processed";
-        webhookEvent.processingHistory.push({
-          status: "skipped",
-          message: "Transaction already processed",
-        });
-        await webhookEvent.save();
+        if (webhookEvent) {
+          webhookEvent.processingStatus = "processed";
+          webhookEvent.processingHistory.push({
+            status: "skipped",
+            message: "Transaction already processed",
+          });
+          await webhookEvent
+            .save()
+            .catch((e: unknown) =>
+              console.error("Failed to save webhook log:", e)
+            );
+        }
         return NextResponse.json({ message: "Already processed" });
       }
 
@@ -81,42 +94,54 @@ export async function POST(request: Request) {
           );
         }
 
-        webhookEvent.relatedTransactionId = transaction._id;
+        if (webhookEvent) {
+          webhookEvent.relatedTransactionId = transaction._id;
+          webhookEvent.processingStatus = "processed";
+          webhookEvent.processingHistory.push({
+            status: "success",
+            message: "Transaction confirmed and credits added",
+          });
+        }
+      } else {
+        if (webhookEvent) {
+          webhookEvent.processingStatus = "failed";
+          webhookEvent.processingHistory.push({
+            status: "failed",
+            message: "Transaction reference not found",
+          });
+        }
+      }
+    } else {
+      if (webhookEvent) {
         webhookEvent.processingStatus = "processed";
         webhookEvent.processingHistory.push({
-          status: "success",
-          message: "Transaction confirmed and credits added",
+          status: "ignored",
+          message: "Event type not handled",
+        });
+      }
+    }
+  } catch (error) {
+    if (webhookEvent) {
+      if (error instanceof Error) {
+        webhookEvent.processingStatus = "failed";
+        webhookEvent.processingHistory.push({
+          status: "error",
+          message: error.message,
         });
       } else {
         webhookEvent.processingStatus = "failed";
         webhookEvent.processingHistory.push({
-          status: "failed",
-          message: "Transaction reference not found",
+          status: "error",
+          message: "Unknown error",
         });
       }
-    } else {
-      webhookEvent.processingStatus = "processed";
-      webhookEvent.processingHistory.push({
-        status: "ignored",
-        message: "Event type not handled",
-      });
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      webhookEvent.processingStatus = "failed";
-      webhookEvent.processingHistory.push({
-        status: "error",
-        message: error.message,
-      });
-    } else {
-      webhookEvent.processingStatus = "failed";
-      webhookEvent.processingHistory.push({
-        status: "error",
-        message: "Unknown error",
-      });
     }
   }
 
-  await webhookEvent.save();
+  if (webhookEvent) {
+    await webhookEvent
+      .save()
+      .catch((e: unknown) => console.error("Final webhook save failed:", e));
+  }
   return NextResponse.json({ received: true });
 }
