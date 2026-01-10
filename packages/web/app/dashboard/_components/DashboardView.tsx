@@ -1,13 +1,58 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { UserProfile } from "@/app/dashboard/page"; // Will move type in next step
-import SummaryCard from "@/components/ui/aevr/summary-card";
+import { UserProfile } from "@/app/dashboard/page";
 import { Card } from "@/components/ui/aevr/card";
 import { Button } from "@/components/ui/aevr/button";
 import { CommitGenerator } from "./CommitGenerator";
+import { DashboardStats } from "./DashboardStats";
+import { UsageHistory } from "./UsageHistory";
 import { LogoutCurve, Copy, Key } from "iconsax-react";
+import { toast } from "sonner";
+
+interface StatsData {
+  balance: {
+    total: number;
+    wallet: number;
+    legacy: number;
+  };
+  stats: {
+    totalCreditsAdded: number;
+    totalCreditsUsed: number;
+    commitsGenerated: number;
+    last7DaysUsage: number;
+    last30DaysUsage: number;
+  };
+  charts: {
+    usageByDay: Array<{ _id: string; count: number; credits: number }>;
+  };
+  recent: {
+    usage: Array<{
+      _id: string;
+      type: string;
+      creditsUsed: number;
+      createdAt: string;
+      metadata?: {
+        model?: string;
+        diffLength?: number;
+        responseLength?: number;
+      };
+    }>;
+    transactions: Array<{
+      _id: string;
+      type: string;
+      credits: number;
+      amount: number;
+      status: string;
+      createdAt: string;
+      metadata?: {
+        provider?: string;
+        usageType?: string;
+      };
+    }>;
+  };
+}
 
 interface DashboardViewProps {
   user: UserProfile | null;
@@ -20,49 +65,76 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   token,
   onLogout,
 }) => {
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
   const copyToken = () => {
     navigator.clipboard.writeText(token);
-    // Could add toast notification here
+    toast.success("Token copied to clipboard");
   };
+
+  // Fetch stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/user/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, [token]);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-          Dashboard
-        </h1>
-        <Button onClick={onLogout} variant="danger" size="sm" className="gap-2">
-          <LogoutCurve variant="Bulk" color="currentColor" className="icon" />
-          Logout
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
+            Dashboard
+          </h1>
+          <p className="text-sm text-neutral-500">
+            Welcome back, {user?.email?.split("@")[0] || "User"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href="/credits">
+            <Button variant="secondary" size="sm">
+              Top Up Credits
+            </Button>
+          </Link>
+          <Button
+            onClick={onLogout}
+            variant="danger"
+            size="sm"
+            className="gap-2"
+          >
+            <LogoutCurve variant="Bulk" color="currentColor" className="icon" />
+            Logout
+          </Button>
+        </div>
       </div>
 
-      <SummaryCard
-        layout="horizontal"
-        items={[
-          {
-            label: "Available Credits",
-            value: user?.credits?.toString() ?? "0",
-            content: (
-              <div className="flex flex-col gap-2 mt-1">
-                <span className="text-xs text-neutral-500">
-                  Used to generate commit messages
-                </span>
-                <Link href="/credits" className="w-fit">
-                  <Button size="sm" variant="secondary" className="h-7 text-xs">
-                    Top Up
-                  </Button>
-                </Link>
-              </div>
-            ),
-          },
-          {
-            label: "Account Email",
-            value: user?.email ?? "Unknown",
-          },
-        ]}
+      {/* Stats Overview */}
+      <DashboardStats data={stats} isLoading={isLoadingStats} />
+
+      {/* Recent Activity */}
+      <UsageHistory
+        transactions={stats?.recent?.transactions || []}
+        usage={stats?.recent?.usage || []}
+        isLoading={isLoadingStats}
       />
 
+      {/* Auth Token Card */}
       <Card
         title="Authentication Token"
         subtitle="Use this token to authenticate the CLI"
@@ -94,7 +166,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </p>
       </Card>
 
-      <CommitGenerator token={token} />
+      {/* Commit Generator */}
+      <CommitGenerator
+        token={token}
+        onCommitGenerated={() => {
+          // Refresh stats after generating a commit
+          setIsLoadingStats(true);
+          fetch("/api/user/stats", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => res.json())
+            .then(setStats)
+            .finally(() => setIsLoadingStats(false));
+        }}
+      />
     </div>
   );
 };

@@ -68,20 +68,18 @@ export async function POST(request: NextRequest) {
 
     const priceInNgn = priceInUsd * ngnRate;
 
-    // For 100Pay, we just create the transaction reference and return it for the frontend to use
+    // For 100Pay, create pending credit transaction
     if (provider === "100pay") {
       const reference = nanoid();
       await WalletTransaction.create({
         userId,
-        type: "deposit",
-        amount: priceInNgn, // We store credits amount or money? Let's store CREDITS amount in metadata or assume amount is money?
-        // The WalletTransaction model has `amount` which usually implies currency.
-        // But here we are buying CREDITS.
-        // Let's store the PRICE in the transaction amount, and credits in metadata.
+        type: "credit", // Credit type for deposits
+        credits: amountOfCredits, // Store credits directly
+        amount: priceInNgn, // Monetary amount
         fee: 0,
         status: "pending",
         providerReference: reference,
-        metadata: { provider: "100pay", credits: amountOfCredits, priceInNgn },
+        metadata: { provider: "100pay", priceInNgn },
       });
 
       return NextResponse.json({
@@ -102,17 +100,17 @@ export async function POST(request: NextRequest) {
 
     const reference = crypto.randomBytes(16).toString("hex");
 
-    // 1. Create Pending Transaction
+    // Paystack - Create Pending Credit Transaction
     await WalletTransaction.create({
       userId,
-      type: "deposit",
-      amount: finalChargeAmount, // Total charged
+      type: "credit", // Credit type for deposits
+      credits: amountOfCredits, // Store credits directly
+      amount: finalChargeAmount, // Total monetary amount charged
       fee: fee, // The fee portion
       status: "pending",
       providerReference: reference,
       metadata: {
         provider: "paystack",
-        credits: amountOfCredits,
         netAmount: priceInNgn,
       },
     });

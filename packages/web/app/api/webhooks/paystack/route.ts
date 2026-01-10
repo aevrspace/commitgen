@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { WalletTransaction } from "@/models/WalletTransaction";
-import User from "@/models/User";
 import { createWebhookEventLogger } from "@/services/webhookEventLogger";
 
 export async function POST(request: Request) {
@@ -41,15 +40,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: "Already processed" });
       }
 
-      // 3. Update Transaction & User Credits
+      // 3. Find and confirm the transaction
       const transaction = await WalletTransaction.findOne({
         providerReference: reference,
       });
 
       if (transaction) {
-        transaction.status = "confirmed";
+        // Get credits from metadata (set during payment initialization)
+        const creditsToCredit = transaction.metadata?.credits || 0;
 
-        // Enrich Data
+        // Update transaction status and enrich with customer data
+        transaction.status = "confirmed";
+        transaction.type = "credit"; // Ensure it's a credit type
+        transaction.credits = creditsToCredit;
+
         if (event.data.customer) {
           transaction.metadata = {
             ...transaction.metadata,
@@ -65,20 +69,16 @@ export async function POST(request: Request) {
             paid_at: event.data.paid_at,
           };
         }
+
         await transaction.save();
 
-        const creditsToGive = transaction.metadata?.credits || 0;
-
-        if (creditsToGive > 0) {
-          await User.findByIdAndUpdate(
-            transaction.userId,
-            { $inc: { credits: creditsToGive } },
-            { new: true }
-          );
-        }
+        // Credits are now tracked via WalletTransaction.credits field
+        // Balance is computed from transactions, no need to update User.credits
 
         eventLogger.linkTransaction(transaction._id.toString());
-        eventLogger.success("Transaction confirmed and credits added");
+        eventLogger.success(
+          `Transaction confirmed: ${creditsToCredit} credits added to wallet`
+        );
       } else {
         eventLogger.fail("Transaction reference not found");
       }

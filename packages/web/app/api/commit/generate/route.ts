@@ -3,8 +3,13 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import AuthToken from "@/models/AuthToken";
 import { createProvider } from "@untools/ai-toolkit";
+import { createWalletService } from "@/services/walletService";
+import { processDiff } from "@/utils/diff/processor";
+import { nanoid } from "nanoid";
 
 export async function POST(req: NextRequest) {
+  const requestId = nanoid();
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -31,27 +36,34 @@ export async function POST(req: NextRequest) {
     // Cast populated userId to User document
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const user: any = authToken.userId;
+    const walletService = createWalletService();
 
-    if (user.credits <= 0) {
+    // Check balance using wallet service + legacy credits
+    const walletBalance = await walletService.getBalance(user._id.toString());
+    const legacyCredits = user.credits || 0;
+    const totalCredits = walletBalance + legacyCredits;
+
+    if (totalCredits < 1) {
       return NextResponse.json(
-        { error: "Insufficient credits" },
+        { error: "Insufficient credits", credits: totalCredits },
         { status: 403 }
       );
     }
 
-    const { diff, model = "gpt-3.5-turbo" } = await req.json();
+    const { diff, model = "llama-3.1-8b-instant" } = await req.json();
 
     if (!diff) {
       return NextResponse.json({ error: "Diff is required" }, { status: 400 });
     }
 
+    // Process diff if too large
+    const processed = processDiff(diff);
+
     // Initialize AI Provider
-    // For now we default to OpenAI or whatever is configured in env
-    // In a real scenario, we might let the user choose or have a system default via Vercel AI SDK
     const provider = createProvider({
       provider: "vercel",
-      vercelModel: { type: "groq", model: "llama-3.1-8b-instant" }, // cost-effective default
-      apiKey: process.env.GROQ_API_KEY, // Needs to be in .env
+      vercelModel: { type: "groq", model: "llama-3.1-8b-instant" },
+      apiKey: process.env.GROQ_API_KEY,
     });
 
     const systemPrompt = `You are an expert developer. Generate a commit message for the following git diff.
@@ -62,30 +74,54 @@ Format: <type>(<scope>): <subject>
 <BLANK LINE>
 <footer>
 
-Only return the commit message, nothing else.`;
+Only return the commit message, nothing else.${
+      processed.stats.isTruncated
+        ? `\n\nNote: This diff was summarized from ${processed.stats.originalLength} chars to ${processed.stats.processedLength} chars. It affects ${processed.stats.totalFiles} files with +${processed.stats.additions}/-${processed.stats.deletions} changes.`
+        : ""
+    }`;
 
     const result = await provider.generateText({
       system: systemPrompt,
-      messages: [{ role: "user", content: diff }],
+      messages: [{ role: "user", content: processed.content }],
     });
 
     if (!result.text) {
       throw new Error("Failed to generate text");
     }
 
-    // Deduct credit
-    user.credits -= 1;
-    await user.save();
+    // Debit credit using wallet service
+    await walletService.debit(user._id.toString(), {
+      type: "commit_generation",
+      creditsUsed: 1,
+      metadata: {
+        model,
+        diffLength: diff.length,
+        responseLength: result.text.length,
+        requestId,
+        userAgent: req.headers.get("user-agent") || undefined,
+        ipAddress:
+          req.headers.get("x-forwarded-for")?.split(",")[0] ||
+          req.headers.get("x-real-ip") ||
+          undefined,
+        apiKeyUsed: token.substring(0, 8) + "...",
+      },
+    });
+
+    // Get updated balance
+    const creditsRemaining = await walletService.getBalance(
+      user._id.toString()
+    );
 
     return NextResponse.json({
       success: true,
       message: result.text,
-      creditsRemaining: user.credits,
+      creditsRemaining,
+      requestId,
     });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", requestId },
       { status: 500 }
     );
   }

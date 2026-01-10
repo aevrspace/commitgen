@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { WalletTransaction } from "@/models/WalletTransaction";
-import User from "@/models/User";
 import { createWebhookEventLogger } from "@/services/webhookEventLogger";
 
 export async function POST(request: Request) {
@@ -26,15 +25,21 @@ export async function POST(request: Request) {
     if (event.type === "credit") {
       const reference = event.data.charge.metadata.ref_id;
 
-      // 2. Update Transaction
+      // 2. Find and update Transaction
       const transaction = await WalletTransaction.findOne({
         providerReference: reference,
       });
 
       if (transaction && transaction.status !== "confirmed") {
-        transaction.status = "confirmed";
+        // Get credits from metadata (set during payment initialization)
+        const creditsToCredit = transaction.metadata?.credits || 0;
 
-        // Enrich Data
+        // Update transaction status and set credits
+        transaction.status = "confirmed";
+        transaction.type = "credit";
+        transaction.credits = creditsToCredit;
+
+        // Enrich with customer data
         if (event.data.charge?.customer) {
           const customer = event.data.charge.customer;
           transaction.metadata = {
@@ -50,21 +55,16 @@ export async function POST(request: Request) {
             billing: event.data.charge.billing,
           };
         }
+
         await transaction.save();
 
-        // 3. Update User Credits
-        const creditsToGive = transaction.metadata?.credits || 0;
-
-        if (creditsToGive > 0) {
-          await User.findByIdAndUpdate(
-            transaction.userId,
-            { $inc: { credits: creditsToGive } },
-            { new: true }
-          );
-        }
+        // Credits are now tracked via WalletTransaction.credits field
+        // Balance is computed from transactions, no need to update User.credits
 
         eventLogger.linkTransaction(transaction._id.toString());
-        eventLogger.success("Transaction confirmed and credits added");
+        eventLogger.success(
+          `Transaction confirmed: ${creditsToCredit} credits added to wallet`
+        );
       } else if (transaction) {
         eventLogger.linkTransaction(transaction._id.toString());
         eventLogger.skip("Transaction already confirmed");

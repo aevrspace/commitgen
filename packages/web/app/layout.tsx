@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Link from "next/link";
-import { Button } from "@/components/ui/aevr/button";
+import { HeaderUserMenu } from "@/components/header/HeaderUserMenu";
 import NextTopLoader from "nextjs-toploader";
 
 import "./globals.css";
@@ -92,11 +92,7 @@ export default function RootLayout({
               </Link>
             </nav>
             <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="primary" size="sm">
-                  Get Started
-                </Button>
-              </Link>
+              <HeaderUserMenu />
             </div>
           </div>
         </header>
