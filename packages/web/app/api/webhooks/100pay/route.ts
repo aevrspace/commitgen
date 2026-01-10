@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { WalletTransaction } from "@/models/WalletTransaction";
 import User from "@/models/User";
-import { WebhookEvent } from "@/models/WebhookEvent";
+import { createWebhookEventLogger } from "@/services/webhookEventLogger";
 
 export async function POST(request: Request) {
   const verificationToken = request.headers.get("verification-token");
@@ -13,28 +13,18 @@ export async function POST(request: Request) {
 
   const event = await request.json();
 
-  // 1b. Log Event (Non-blocking / Safe)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let webhookEvent: any = null;
-  try {
-    webhookEvent = await WebhookEvent.create({
-      provider: "100pay",
-      eventType: event.type,
-      payload: event,
-      processingStatus: "processing",
-      processingHistory: [{ status: "processing", message: "Token verified" }],
-    });
-  } catch (error) {
-    console.error("Failed to create webhook event log:", error);
-    // Continue processing
-  }
+  // 1b. Log Event (Non-blocking, Resilient)
+  const eventLogger = createWebhookEventLogger();
+  eventLogger.create({
+    provider: "100pay",
+    eventType: event.type,
+    payload: event,
+    initialHistory: [{ status: "processing", message: "Token verified" }],
+  });
 
   try {
-    // Check event type - docs say 'charge.completed' or similar?
-    // Guide says: if (event.type === "credit")
     if (event.type === "credit") {
       const reference = event.data.charge.metadata.ref_id;
-      // const amount = parseFloat(event.data.charge.billing.amount);
 
       // 2. Update Transaction
       const transaction = await WalletTransaction.findOne({
@@ -43,6 +33,7 @@ export async function POST(request: Request) {
 
       if (transaction && transaction.status !== "confirmed") {
         transaction.status = "confirmed";
+
         // Enrich Data
         if (event.data.charge?.customer) {
           const customer = event.data.charge.customer;
@@ -72,63 +63,21 @@ export async function POST(request: Request) {
           );
         }
 
-        if (webhookEvent) {
-          webhookEvent.relatedTransactionId = transaction._id;
-          webhookEvent.processingStatus = "processed";
-          webhookEvent.processingHistory.push({
-            status: "success",
-            message: "Transaction confirmed and credits added",
-          });
-        }
+        eventLogger.linkTransaction(transaction._id.toString());
+        eventLogger.success("Transaction confirmed and credits added");
       } else if (transaction) {
-        if (webhookEvent) {
-          webhookEvent.relatedTransactionId = transaction._id;
-          webhookEvent.processingStatus = "processed";
-          webhookEvent.processingHistory.push({
-            status: "skipped",
-            message: "Transaction already confirmed",
-          });
-        }
+        eventLogger.linkTransaction(transaction._id.toString());
+        eventLogger.skip("Transaction already confirmed");
       } else {
-        if (webhookEvent) {
-          webhookEvent.processingStatus = "failed";
-          webhookEvent.processingHistory.push({
-            status: "failed",
-            message: "Transaction reference not found",
-          });
-        }
+        eventLogger.fail("Transaction reference not found");
       }
     } else {
-      if (webhookEvent) {
-        webhookEvent.processingStatus = "processed";
-        webhookEvent.processingHistory.push({
-          status: "ignored",
-          message: "Event type not handled",
-        });
-      }
+      eventLogger.skip("Event type not handled");
     }
   } catch (error) {
-    if (webhookEvent) {
-      if (error instanceof Error) {
-        webhookEvent.processingStatus = "failed";
-        webhookEvent.processingHistory.push({
-          status: "error",
-          message: error.message,
-        });
-      } else {
-        webhookEvent.processingStatus = "failed";
-        webhookEvent.processingHistory.push({
-          status: "error",
-          message: "Unknown error",
-        });
-      }
-    }
+    const message = error instanceof Error ? error.message : "Unknown error";
+    eventLogger.fail(message);
   }
 
-  if (webhookEvent) {
-    await webhookEvent
-      .save()
-      .catch((e: unknown) => console.error("Final webhook save failed:", e));
-  }
   return NextResponse.json({ received: true });
 }
