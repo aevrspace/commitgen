@@ -37,7 +37,8 @@ export async function buyCreditsCommand() {
 
   console.log(chalk.yellow("\nInitializing payment..."));
 
-  const WEB_APP_URL = process.env.COMMITGEN_WEB_URL || "http://localhost:3000";
+  const WEB_APP_URL =
+    process.env.COMMITGEN_WEB_URL || "https://commitgen.aevr.space";
 
   try {
     const response = await fetch(`${WEB_APP_URL}/api/payment/initialize`, {

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/aevrHQ/commitgen/compare/v0.4.0...v0.4.1) (2026-01-10)
+
+
+### Features
+
+* **callback:** Implement payment callback page . ([77ca1cb](https://github.com/aevrHQ/commitgen/commit/77ca1cb19c09fbf5fb98018ff036ef472329bb25))
+* **cli,dashboard:** Add dashboard command and CLI token authentication ([8c74b52](https://github.com/aevrHQ/commitgen/commit/8c74b52edf784b4a8238888cd59db65c952914ae))
+* **content:** Update currency and payment integration documentation with latest changes. . ([c6f23ba](https://github.com/aevrHQ/commitgen/commit/c6f23baa946b0147f47ebf459f894cd72bd40a34))
+* **db:** Migrate WalletTransaction model to Transaction model and related models. ([eb12c09](https://github.com/aevrHQ/commitgen/commit/eb12c090a69bd15183bf8ee516c09d790ff45f68))
+
 ## [0.4.0](https://github.com/aevrHQ/commitgen/compare/v0.3.4...v0.4.0) (2026-01-10)
 
 
