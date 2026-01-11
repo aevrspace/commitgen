@@ -79,19 +79,33 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.GROQ_API_KEY,
     });
 
-    const systemPrompt = `You are an expert developer. Generate a commit message for the following git diff.
-The message should follow the Conventional Commits specification.
-Format: <type>(<scope>): <subject>
-<BLANK LINE>
-<body>
-<BLANK LINE>
-<footer>
-
-Only return the commit message, nothing else.${
+    const systemPrompt = `You are an expert developer. Generate a commit message for the provided git diff.
+    
+    Rules:
+    1. Pattern: <type>(<scope>): <subject>
+    2. Body:
+       - Add a blank line after the subject.
+       - Provide a bulleted list of changes (use hyphens).
+       - Be specific and descriptive (e.g., "Add user authentication" instead of "Update code").
+       - Mention specific files or components where relevant.
+    
+    Example:
+    feat(auth): implement login drawer and validaton
+    
+    - Create LoginDrawer component with form validation
+    - Add useAuth hook for managing session state
+    - Update App.tsx to include the new drawer
+    - Fix alignment issue in the header component
+    
+    Input Context:
+    ${
       processed.stats.isTruncated
-        ? `\n\nNote: This diff was summarized from ${processed.stats.originalLength} chars to ${processed.stats.processedLength} chars. It affects ${processed.stats.totalFiles} files with +${processed.stats.additions}/-${processed.stats.deletions} changes.`
+        ? `Note: This diff was summarized from ${processed.stats.originalLength} chars to ${processed.stats.processedLength} chars. It affects ${processed.stats.totalFiles} files with +${processed.stats.additions}/-${processed.stats.deletions} changes.`
         : ""
-    }`;
+    }
+    
+    Response format:
+    Return ONLY the commit message. Do not include markdown code blocks, quotes, or any other wrapper text.`;
 
     const result = await provider.generateText({
       system: systemPrompt,
