@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.2](https://github.com/aevrHQ/commitgen/compare/v0.4.1...v0.4.2) (2026-01-11)
+
+
+### Features
+
+* **api/commit-helper:** Update prompt for commit message generation. ([5af8f75](https://github.com/aevrHQ/commitgen/commit/5af8f757dcaf15634bbc652d3f1e5508ae488c31))
+* **cli:** Set execSync maxBuffer to avoid potential Node.js error. ([fd33b2f](https://github.com/aevrHQ/commitgen/commit/fd33b2ff1b3df08d3bbeeb122d12f219680abe2f))
+* **web/credits:** Add bidirectional credit-to-amount conversion and transaction receipt ([4b6be35](https://github.com/aevrHQ/commitgen/commit/4b6be35705cceadd730b6f70faf4d2506fc9e0ae))
+* **web:** Update API route to generate commit message following Conventional Commits specification. ([1868255](https://github.com/aevrHQ/commitgen/commit/18682556c38ccac38ae00ab9b8ba9ece4e1efec5))
+
+
+### Chores
+
+* Here is the conventional commit message following the specified format:. ([295754c](https://github.com/aevrHQ/commitgen/commit/295754c5ed4ee6d60e65ceea3719c44a1e6aa38d))
+
 ### [0.4.1](https://github.com/aevrHQ/commitgen/compare/v0.4.0...v0.4.1) (2026-01-10)
 
 

@@ -21,9 +21,12 @@ interface ProcessedDiff {
 }
 
 // Most AI models can handle ~8000-16000 tokens
-// Being conservative: ~4 chars per token, aim for ~6000 tokens = 24000 chars
-const MAX_DIFF_LENGTH = 24000;
-const MAX_FILE_CONTENT_LENGTH = 3000; // Max content per file
+// We need to stay safely under 6000 TPM limit (including system prompt + response)
+// System prompt ~1000 tokens, Output ~500 tokens. Safe buffer ~4500 tokens.
+// 4500 tokens * 4 chars/token = ~18000 chars. Let's be conservative with 16000.
+const MAX_DIFF_LENGTH = 16000;
+const MAX_FILE_CONTENT_LENGTH = 2000; // Reduced to fit more files
+const MAX_FILES_TO_PROCESS = 20; // Only process detailed diffs for top 20 files
 
 /**
  * Parse a git diff to extract file information
@@ -103,8 +106,10 @@ function countChanges(diff: string): { additions: number; deletions: number } {
  *
  * Strategies:
  * 1. If diff is small enough, use as-is
- * 2. If too large, summarize each file and combine
- * 3. If still too large, prioritize files by importance (non-config, non-lock files first)
+ * 2. If too large, use "Top N Files" strategy:
+ *    - Sort by importance (Source > Config > Lock)
+ *    - Process top N files detailed
+ *    - List remaining files as summary only
  */
 export function processDiff(diff: string): ProcessedDiff {
   const originalLength = diff.length;
@@ -127,62 +132,82 @@ export function processDiff(diff: string): ProcessedDiff {
     };
   }
 
-  // Parse files and prioritize
+  // Parse all files
   const files = parseDiffFiles(diff);
+  const changes = countChanges(diff);
 
-  // Priority: source files > config files > lock files
+  // Priority: source files > config files > lock files/generated
   const priorityOrder = (filename: string): number => {
-    if (filename.includes("lock") || filename.endsWith(".lock")) return 3;
+    const lower = filename.toLowerCase();
+    if (lower.includes("lock") || lower.endsWith(".lock")) return 4;
+    if (lower.includes("min.js") || lower.includes("map")) return 4;
     if (
-      filename.endsWith(".json") ||
-      filename.endsWith(".yaml") ||
-      filename.endsWith(".yml") ||
-      filename.endsWith(".toml")
+      lower.endsWith(".json") ||
+      lower.endsWith(".yaml") ||
+      lower.endsWith(".yml") ||
+      lower.endsWith(".toml") ||
+      lower.endsWith(".xml")
     )
-      return 2;
-    return 1;
+      return 3;
+    if (lower.endsWith(".md") || lower.endsWith(".txt")) return 2;
+    return 1; // Code files are highest priority
   };
 
+  // Sort files by priority
   const sortedFiles = [...files].sort(
     (a, b) => priorityOrder(a.filename) - priorityOrder(b.filename)
   );
 
-  // Calculate how much space per file
+  // Take top N files for detailed processing
+  const topFiles = sortedFiles.slice(0, MAX_FILES_TO_PROCESS);
+  const remainingFiles = sortedFiles.slice(MAX_FILES_TO_PROCESS);
+
+  // Calculate strict space per file
+  // Reserve ~500 chars for header and footer
+  const availableSpace = MAX_DIFF_LENGTH - 500;
   const targetLengthPerFile = Math.floor(
-    MAX_DIFF_LENGTH / Math.max(files.length, 1)
+    availableSpace / Math.max(topFiles.length, 1)
   );
   const perFileLimit = Math.min(targetLengthPerFile, MAX_FILE_CONTENT_LENGTH);
 
   // Build summarized diff
   let processedDiff = "";
-  const includedFiles: string[] = [];
-  const changes = countChanges(diff);
 
   // Add summary header
   processedDiff += `# Git Diff Summary\n`;
   processedDiff += `# Files changed: ${files.length}\n`;
   processedDiff += `# Additions: +${changes.additions}, Deletions: -${changes.deletions}\n\n`;
+  processedDiff += `# Showing detailed diffs for top ${topFiles.length} files. Others are listed below.\n\n`;
 
-  for (const file of sortedFiles) {
+  // Process top files
+  for (const file of topFiles) {
     const summarized = `diff --git a/${file.filename} b/${
       file.filename
     }\n${summarizeFileDiff(file.content, perFileLimit)}\n`;
 
+    // Double check total length (should be safe due to conservative math, but good to check)
     if (processedDiff.length + summarized.length > MAX_DIFF_LENGTH) {
-      // Add note about excluded files
-      const excludedFiles = sortedFiles
-        .slice(includedFiles.length)
-        .map((f) => f.filename);
-      processedDiff += `\n# ${
-        excludedFiles.length
-      } more file(s) not shown: ${excludedFiles.slice(0, 5).join(", ")}${
-        excludedFiles.length > 5 ? "..." : ""
-      }`;
+      // Stop early if we somehow hit the limit
       break;
     }
-
     processedDiff += summarized;
-    includedFiles.push(file.filename);
+  }
+
+  // Append summary of remaining files if any
+  if (remainingFiles.length > 0) {
+    processedDiff += `\n# ... and ${remainingFiles.length} more files changed:\n`;
+    // List remaining files, but don't blow the limit
+    let currentLength = processedDiff.length;
+    for (const file of remainingFiles) {
+      const line = `# ${file.filename}\n`;
+      if (currentLength + line.length > MAX_DIFF_LENGTH + 1000) {
+        // Allow a bit of overflow for file list
+        processedDiff += `# ... (list truncated)`;
+        break;
+      }
+      processedDiff += line;
+      currentLength += line.length;
+    }
   }
 
   return {
@@ -191,7 +216,7 @@ export function processDiff(diff: string): ProcessedDiff {
       totalFiles: files.length,
       additions: changes.additions,
       deletions: changes.deletions,
-      filesChanged: files.map((f) => f.filename),
+      filesChanged: files.map((f) => f.filename), // Return all original filenames
       isTruncated: true,
       originalLength,
       processedLength: processedDiff.length,

@@ -71,6 +71,7 @@ class CommitGen {
       return execSync(cmd, {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "ignore"],
+        maxBuffer: 10 * 1024 * 1024, // 10MB
       }).trim();
     } catch (error) {
       return "";
