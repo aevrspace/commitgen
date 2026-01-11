@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { LoginForm } from "./_components/LoginForm";
 import { VerifyForm } from "./_components/VerifyForm";
@@ -13,7 +13,7 @@ export interface UserProfile {
   credits: number;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"login" | "verify" | "dashboard">("login");
@@ -129,5 +129,19 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-full items-center justify-center">
+          <Loader loading className="text-app-theme-600" />
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

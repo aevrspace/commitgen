@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency } from "@/utils/aevr/number-formatter";
 import { format } from "date-fns";
 import { usePersistedState } from "@/hooks/aevr/use-persisted-state";
+import { TransactionReceipt } from "./TransactionReceipt";
 
 interface Transaction {
   _id: string;
@@ -82,21 +82,6 @@ export function TransactionHistory() {
     }
   };
 
-  const getStatusBadgeStyles = (status: string) => {
-    switch (status) {
-      case "successful":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-      case "failed":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-      case "reversed":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-    }
-  };
-
   return (
     <>
       <div className="rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950 overflow-hidden">
@@ -150,121 +135,26 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {/* Details Modal */}
+      {/* Receipt Modal */}
       {selectedTx && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setSelectedTx(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-neutral-950"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold">Transaction Details</h3>
-              <button
-                onClick={() => setSelectedTx(null)}
-                className="text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase text-neutral-500">
-                  Status
-                </label>
-                <div
-                  className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${getStatusBadgeStyles(
-                    selectedTx.status
-                  )}`}
-                >
-                  {selectedTx.status}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase text-neutral-500">
-                    Amount Paid
-                  </label>
-                  <div className="text-lg font-medium">
-                    {selectedTx.metadata?.chargeAmount
-                      ? formatCurrency(
-                          selectedTx.metadata.chargeAmount as number,
-                          { currency: "NGN" }
-                        )
-                      : `${selectedTx.amount} ${selectedTx.symbol}`}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase text-neutral-500">
-                    Credits Received
-                  </label>
-                  <div className="text-lg font-medium text-indigo-600 dark:text-indigo-400">
-                    {selectedTx.amount}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase text-neutral-500">
-                    Category
-                  </label>
-                  <div className="text-sm font-medium capitalize">
-                    {selectedTx.category}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase text-neutral-500">
-                    Channel
-                  </label>
-                  <div className="text-sm font-medium capitalize">
-                    {selectedTx.channel ||
-                      selectedTx.metadata?.provider ||
-                      "N/A"}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold uppercase text-neutral-500">
-                  Reference
-                </label>
-                <div className="font-mono text-xs text-neutral-700 dark:text-neutral-300 break-all">
-                  {selectedTx.providerReference}
-                </div>
-              </div>
-
-              {selectedTx.metadata?.customer && (
-                <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900/50">
-                  <label className="text-xs font-semibold uppercase text-neutral-500 mb-2 block">
-                    Payer Info
-                  </label>
-                  <div className="text-sm space-y-1">
-                    <div className="flex justify-between">
-                      <span>Name:</span>
-                      <span className="font-medium">
-                        {selectedTx.metadata.customer.name ||
-                          `${selectedTx.metadata.customer.first_name || ""} ${
-                            selectedTx.metadata.customer.last_name || ""
-                          }`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Email:</span>
-                      <span className="font-medium">
-                        {selectedTx.metadata.customer.email}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <TransactionReceipt
+          transaction={{
+            id: selectedTx._id,
+            amount:
+              (selectedTx.metadata?.chargeAmount as number) ||
+              selectedTx.amount,
+            credits: selectedTx.amount,
+            currency:
+              selectedTx.symbol === "CREDITS" ? "NGN" : selectedTx.symbol,
+            status: selectedTx.status,
+            category: selectedTx.category,
+            channel: selectedTx.channel || selectedTx.metadata?.provider,
+            providerReference: selectedTx.providerReference,
+            createdAt: selectedTx.createdAt,
+            customer: selectedTx.metadata?.customer,
+          }}
+          onClose={() => setSelectedTx(null)}
+        />
       )}
     </>
   );

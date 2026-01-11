@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/aevr/button";
 import { toast } from "sonner";
 import { payWith100Pay } from "@/utils/payWith100Pay";
 import { TransactionHistory } from "@/components/transactions/TransactionHistory";
+import { TransactionReceipt } from "@/components/transactions/TransactionReceipt";
+import { ArrowSwapHorizontal } from "iconsax-react";
 
 interface User {
   id: string;
@@ -66,26 +68,59 @@ export default function CreditsPage() {
 
   const supportedCurrencyCodes = Object.keys(supportedCurrencies).sort();
 
-  const [inputAmount, setInputAmount] = useState<number>(1); // 1 Unit of baseCurrency
-  const [calculatedCredits, setCalculatedCredits] = useState<number>(80);
+  // Input mode: "amount" (default) or "credits"
+  const [inputMode, setInputMode] = useState<"amount" | "credits">("credits");
+  const [inputAmount, setInputAmount] = useState<number>(1); // Fiat amount when mode=amount
+  const [inputCredits, setInputCredits] = useState<number>(100); // Credits when mode=credits
+  const [calculatedCredits, setCalculatedCredits] = useState<number>(100);
+  const [calculatedAmount, setCalculatedAmount] = useState<number>(0);
   const [creditCostInUsd, setCreditCostInUsd] = useState(1);
 
-  // Effect to calculate credits when amount or currency changes
+  // Effect to calculate based on input mode
   useEffect(() => {
     const calc = async () => {
       if (!rates) return;
-      // Convert User's Input (in baseCurrency) -> USD
-      const usdValue = await convertCurrency(inputAmount, baseCurrency, "USD");
 
-      if (usdValue === null) return;
+      if (inputMode === "amount") {
+        // Convert User's Input (in baseCurrency) -> USD
+        const usdValue = await convertCurrency(
+          inputAmount,
+          baseCurrency,
+          "USD"
+        );
+        if (usdValue === null) return;
 
-      setCreditCostInUsd(usdValue);
-      // 1 USD = 80 Credits
-      const credits = Math.floor(usdValue * 80);
-      setCalculatedCredits(credits);
+        setCreditCostInUsd(usdValue);
+        // 1 USD = 80 Credits
+        const credits = Math.floor(usdValue * 80);
+        setCalculatedCredits(credits);
+      } else {
+        // Credits mode: calculate amount from credits
+        // credits / 80 = USD value
+        const usdValue = inputCredits / 80;
+        setCreditCostInUsd(usdValue);
+        setCalculatedCredits(inputCredits);
+
+        // Convert USD -> baseCurrency
+        const amountInCurrency = await convertCurrency(
+          usdValue,
+          "USD",
+          baseCurrency
+        );
+        if (amountInCurrency !== null) {
+          setCalculatedAmount(amountInCurrency);
+        }
+      }
     };
     calc();
-  }, [inputAmount, baseCurrency, rates, convertCurrency]);
+  }, [
+    inputAmount,
+    inputCredits,
+    inputMode,
+    baseCurrency,
+    rates,
+    convertCurrency,
+  ]);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<{
@@ -203,77 +238,127 @@ export default function CreditsPage() {
           <div className="space-y-4">
             <h1 className="text-3xl font-bold tracking-tight">Buy Credits</h1>
             <p className="text-neutral-500 dark:text-neutral-400">
-              Enter an amount to calculate how many credits you&apos;ll get.
+              {inputMode === "credits"
+                ? "Enter the credits you want and see the price."
+                : "Enter an amount to calculate how many credits you'll get."}
             </p>
           </div>
 
           <div className="w-full rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            {/* ... Calculator UI ... */}
-            {/* COPY EXISTING CALCULATOR UI HERE - Keeping it brief for diff */}
-            <div className="mb-6 flex items-center justify-between">
-              {/* ... Balance ... */}
-            </div>
-
             <div className="mb-6 space-y-4">
-              {/* ... Inputs ... */}
-              {/* Reuse existing Inputs code block exactly */}
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
                 <div className="flex flex-col gap-4">
+                  {/* Input Section */}
                   <div className="flex items-end gap-2">
                     <div className="flex-1">
                       <label className="text-xs font-semibold uppercase text-neutral-500 mb-1 block">
-                        Amount
+                        {inputMode === "credits" ? "Credits" : "Amount"}
                       </label>
                       <div className="relative">
                         <input
                           type="number"
                           min="1"
-                          value={inputAmount}
-                          onChange={(e) =>
-                            setInputAmount(parseFloat(e.target.value) || 0)
+                          value={
+                            inputMode === "credits" ? inputCredits : inputAmount
                           }
-                          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-black"
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            if (inputMode === "credits") {
+                              setInputCredits(val);
+                            } else {
+                              setInputAmount(val);
+                            }
+                          }}
+                          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-lg font-semibold focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-black"
                         />
                         {isLoadingRates && (
-                          <div className="absolute right-2 top-2 text-[10px] text-neutral-400">
+                          <div className="absolute right-2 top-3 text-[10px] text-neutral-400">
                             Updating...
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="w-1/3">
-                      <label className="text-xs font-semibold uppercase text-neutral-500 mb-1 block">
-                        Currency
-                      </label>
-                      <select
-                        value={baseCurrency}
-                        onChange={(e) => setBaseCurrency(e.target.value)}
-                        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-black"
-                      >
-                        {supportedCurrencyCodes.length > 0 ? (
-                          supportedCurrencyCodes.map((code) => (
-                            <option key={code} value={code}>
-                              {code}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="USD">USD</option>
-                        )}
-                      </select>
-                    </div>
+                    {inputMode === "amount" && (
+                      <div className="w-1/3">
+                        <label className="text-xs font-semibold uppercase text-neutral-500 mb-1 block">
+                          Currency
+                        </label>
+                        <select
+                          value={baseCurrency}
+                          onChange={(e) => setBaseCurrency(e.target.value)}
+                          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-black"
+                        >
+                          {supportedCurrencyCodes.length > 0 ? (
+                            supportedCurrencyCodes.map((code) => (
+                              <option key={code} value={code}>
+                                {code}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="USD">USD</option>
+                          )}
+                        </select>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Toggle Button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() =>
+                        setInputMode(
+                          inputMode === "credits" ? "amount" : "credits"
+                        )
+                      }
+                      className="flex items-center gap-2 rounded-full bg-neutral-200 px-4 py-2 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                    >
+                      <ArrowSwapHorizontal
+                        variant="Bulk"
+                        color="currentColor"
+                        className="h-4 w-4"
+                      />
+                      Switch to {inputMode === "credits" ? "Amount" : "Credits"}{" "}
+                      input
+                    </button>
+                  </div>
+
+                  {/* Result Section */}
                   <div className="flex items-center justify-between border-t border-neutral-200 pt-4 dark:border-neutral-800">
                     <div className="text-sm text-neutral-500">
-                      You Get Using {baseCurrency}
+                      {inputMode === "credits"
+                        ? `You Pay (${baseCurrency})`
+                        : "You Get"}
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                        {calculatedCredits.toLocaleString()} Credits
-                      </div>
-                      <div className="text-xs text-neutral-400">
-                        (approx{" "}
-                        {formatCurrency(creditCostInUsd, { currency: "USD" })})
-                      </div>
+                      {inputMode === "credits" ? (
+                        <>
+                          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {formatCurrency(calculatedAmount, {
+                              currency: baseCurrency,
+                            })}
+                          </div>
+                          <div className="text-xs text-neutral-400">
+                            (approx{" "}
+                            {formatCurrency(creditCostInUsd, {
+                              currency: "USD",
+                            })}
+                            )
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {calculatedCredits.toLocaleString()} Credits
+                          </div>
+                          <div className="text-xs text-neutral-400">
+                            (approx{" "}
+                            {formatCurrency(creditCostInUsd, {
+                              currency: "USD",
+                            })}
+                            )
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   {calculatedCredits < 10 && (
@@ -335,61 +420,21 @@ export default function CreditsPage() {
 
       {/* Success Modal */}
       {showSuccessModal && lastTransaction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-xl bg-white p-8 text-center shadow-xl dark:bg-neutral-950">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="h-8 w-8"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-            </div>
-            <h2 className="mb-2 text-2xl font-bold">Payment Successful!</h2>
-            <p className="mb-6 text-neutral-500">
-              Your account has been credited.
-            </p>
-
-            <div className="mb-6 space-y-2 rounded-lg bg-neutral-50 p-4 text-sm dark:bg-neutral-900/50">
-              <div className="flex justify-between">
-                <span>Credits Added</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                  +{lastTransaction.credits}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Amount Paid</span>
-                <span className="font-medium">
-                  {formatCurrency(lastTransaction.amount, {
-                    currency: "NGN",
-                    display: "symbol",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Reference</span>
-                <span className="font-mono text-xs">
-                  {lastTransaction.reference.substring(0, 10)}...
-                </span>
-              </div>
-            </div>
-
-            <Button
-              onClick={() => setShowSuccessModal(false)}
-              className="w-full"
-            >
-              Done
-            </Button>
-          </div>
-        </div>
+        <TransactionReceipt
+          transaction={{
+            id: lastTransaction.reference,
+            amount: lastTransaction.amount,
+            credits: lastTransaction.credits,
+            currency: "NGN",
+            status: "successful",
+            category: "deposit",
+            channel: provider,
+            providerReference: lastTransaction.reference,
+            createdAt: new Date().toISOString(),
+          }}
+          onClose={() => setShowSuccessModal(false)}
+          showSuccessHeader={true}
+        />
       )}
     </div>
   );
