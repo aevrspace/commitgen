@@ -28,7 +28,8 @@
     "openai"
   ],
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "engines": {
     "node": ">=14.0.0"
