@@ -3,6 +3,12 @@
 import React from "react";
 import { Card } from "@/components/ui/aevr/card";
 import { Chart, Coin1, Activity, Timer1 } from "iconsax-react";
+import { Bar, BarChart, XAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface StatsData {
   balance: {
@@ -81,8 +87,12 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     },
   ];
 
-  // Calculate max for chart scaling
-  const maxUsage = Math.max(...data.charts.usageByDay.map((d) => d.count), 1);
+  const chartConfig = {
+    commits: {
+      label: "Commits",
+      color: "hsl(var(--chart-1))",
+    },
+  };
 
   return (
     <div className="space-y-6">
@@ -131,47 +141,34 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               Commit generations over the last 7 days
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-emerald-500" />
-              Credits Used
-            </span>
-          </div>
         </div>
 
-        {/* Simple Bar Chart */}
-        <div className="flex h-40 items-end gap-2">
-          {data.charts.usageByDay.length > 0 ? (
-            data.charts.usageByDay.map((day) => {
-              const height = (day.count / maxUsage) * 100;
-              const date = new Date(day._id);
-              const dayName = date.toLocaleDateString("en-US", {
-                weekday: "short",
-              });
-
-              return (
-                <div
-                  key={day._id}
-                  className="flex flex-1 flex-col items-center gap-2"
-                >
-                  <div className="relative flex w-full flex-col items-center">
-                    <span className="absolute -top-5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                      {day.count}
-                    </span>
-                    <div
-                      className="w-full max-w-8 rounded-t-lg bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all"
-                      style={{ height: `${Math.max(height, 8)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-neutral-500">{dayName}</span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-neutral-400">
-              No activity in the last 7 days
-            </div>
-          )}
+        <div className="h-[200px] w-full">
+          <ChartContainer config={chartConfig} className="h-full w-full">
+            <BarChart data={data.charts.usageByDay}>
+              <XAxis
+                dataKey="_id"
+                tickFormatter={(value) =>
+                  new Date(value).toLocaleDateString("en-US", {
+                    weekday: "short",
+                  })
+                }
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Bar
+                dataKey="count"
+                fill="var(--color-commits)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ChartContainer>
         </div>
       </Card>
     </div>
