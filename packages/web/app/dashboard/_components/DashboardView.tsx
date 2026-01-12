@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/aevr/button";
 import { CommitGenerator } from "./CommitGenerator";
 import { DashboardStats } from "./DashboardStats";
 import { UsageHistory } from "./UsageHistory";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LogoutCurve, Copy, Key } from "iconsax-react";
 import { toast } from "sonner";
 
@@ -125,15 +126,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Stats Overview */}
-      <DashboardStats data={stats} isLoading={isLoadingStats} />
+      <div className="mb-8">
+        <ErrorBoundary>
+          <DashboardStats data={stats} isLoading={isLoadingStats} />
+        </ErrorBoundary>
+      </div>
 
       {/* Recent Activity */}
-      <UsageHistory
-        transactions={stats?.recent?.transactions || []}
-        usage={stats?.recent?.usage || []}
-        isLoading={isLoadingStats}
-      />
-
+      <div className="mb-8">
+        <ErrorBoundary>
+          <UsageHistory
+            transactions={stats?.recent?.transactions || []}
+            usage={stats?.recent?.usage || []}
+            isLoading={isLoadingStats}
+          />
+        </ErrorBoundary>
+      </div>
       {/* Auth Token Card */}
       <Card
         title="Authentication Token"

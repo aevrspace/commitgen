@@ -87,11 +87,23 @@ const TransactionsList = ({ initialData }: { initialData: Transaction[] }) => {
         const res = await fetch(
           `/api/user/transactions?page=${page}&limit=${ITEMS_PER_PAGE}`
         );
+        if (!res.ok) {
+          console.error(
+            "Failed to fetch transactions:",
+            res.status,
+            res.statusText
+          );
+          setData([]);
+          setTotalPages(1);
+          return;
+        }
         const json = await res.json();
-        setData(json.transactions);
-        setTotalPages(json.pagination.pages);
+        setData(json.transactions || []);
+        setTotalPages(json.pagination?.pages || 1);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching transactions:", err);
+        setData([]);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
@@ -303,11 +315,19 @@ const CommitsList = ({ initialData }: { initialData: UsageEntry[] }) => {
         const res = await fetch(
           `/api/user/commits?page=${page}&limit=${ITEMS_PER_PAGE}`
         );
+        if (!res.ok) {
+          console.error("Failed to fetch commits:", res.status, res.statusText);
+          setData([]);
+          setTotalPages(1);
+          return;
+        }
         const json = await res.json();
-        setData(json.usage);
-        setTotalPages(json.pagination.pages);
+        setData(json.usage || []);
+        setTotalPages(json.pagination?.pages || 1);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching commits:", err);
+        setData([]);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
