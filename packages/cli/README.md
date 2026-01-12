@@ -2,110 +2,128 @@
 
 **The AI-Powered Commit Generator**
 
-CommitGen is a powerful CLI tool that leverages AI to generate conventional commit messages from your staged changes. You can use it with our hosted service (50 free credits on sign-up) or bring your own API keys.
+CommitGen is a powerful CLI tool that leverages AI to generate conventional commit messages from your staged changes. It works with 50 free credits (no key required) or your own Google AI API key.
 
 ## Installation
 
+Install globally using your preferred package manager:
+
 ```bash
+# npm
 npm install -g @untools/commitgen
+
+# pnpm
+pnpm add -g @untools/commitgen
+
+# yarn
+yarn global add @untools/commitgen
 ```
 
-Or run directly with npx:
+Or run correctly via `npx` (no installation required):
 
 ```bash
 npx @untools/commitgen
 ```
 
+### Upgrading
+
+To update to the latest version:
+
+```bash
+npm install -g @untools/commitgen@latest
+```
+
 ## Quick Start
 
-### Option 1: The Easy Way (Free Credits) ⚡
+### ⚡ Option 1: Free 50 Credits (No Key Required)
 
-Sign up with your email to get **50 free generation credits**. No API keys required.
+Just sign up with your email to start generating commits immediately.
 
-1.  Run the login command:
+1.  **Login**:
     ```bash
     commitgen login
     ```
-2.  Enter your email and the OTP sent to you.
-3.  Start generating commits:
+2.  **Generate**:
+    Stage your files (`git add .`) and run:
     ```bash
-    git add .
     commitgen
     ```
 
-### Option 2: Bring Your Own Key (Google AI) 🔑
+### 🔑 Option 2: Bring Your Own Key (Unlimited)
 
-Prefer to use your own API key? We support Google Gemini models via the Vercel AI SDK.
+Use your own Google Gemini API key for unlimited generations.
 
-1.  Configure the CLI:
+1.  **Configure**:
     ```bash
     commitgen config
     ```
 2.  Select **"Vercel AI SDK - Google Gemini (Own Key)"**.
-3.  Enter your **Google AI API Key** when prompted.
-4.  (Optional) Select your preferred model (e.g., Gemini 2.5 Flash).
+3.  Enter your API Key.
+    > Don't have one? [Get a free Google AI Key here](https://aistudio.google.com/app/apikey).
 
-> **Tip:** You can also set the `GOOGLE_GENERATIVE_AI_API_KEY` environment variable instead of saving it in the config file.
+## Advanced Features
 
-## How to get a Google AI API Key
+### 🔄 Multi-Commit Mode
 
-Getting an API key from Google AI Studio is quick and free. Follow these steps to start generating commits with your own key.
-
-1.  **Navigate to Google AI Studio**
-    Go to [aistudio.google.com](https://aistudio.google.com).
-
-2.  **Sign In**
-    Log in with your Google Account. If this is your first time, you may need to accept the terms of service.
-
-3.  **Locate API Key Section**
-    Look at the top-left corner of the interface. You should see a button labeled "Get API key" (often indicated by a key icon). Click it.
-
-4.  **Create & Copy Key**
-    Click "Create API key". You can choose to create it in a new project (easiest) or an existing one.
-
-    `AIzaSyD-EXAMPLE-KEY-DO-NOT-SHARE`
-
-    > **Important:** Copy this key immediately. You won't be able to see it again after closing the dialog.
-
-### Security Best Practices
-
-- **Never share your API key.** Do not post it on public forums or commit it to GitHub.
-- **Use Environment Variables.** Store it in a `.env` file or use `commitgen config` securely.
-
-### Troubleshooting
-
-- **Quota Exceeded:** The free tier is generous (15 RPM), but if you hit limits, wait a moment or check your billing settings.
-- **Region Lock:** Ensure you are in a supported region for Google AI Studio.
-
-## Usage
-
-### Basic Usage
-
-Stage your changes and run `commitgen`:
+CommitGen can detect when you've modified unrelated files and suggest splitting them into multiple atomic commits.
 
 ```bash
-git add .
-commitgen
+commitgen --multi-commit
 ```
 
-### Commands
+_The CLI will prompt you to confirm the split groups before proceeding._
 
-| Command                 | Description                                    |
-| :---------------------- | :--------------------------------------------- |
-| `commitgen`             | Generate a commit message for staged changes.  |
-| `commitgen config`      | Configure AI provider, model, and API keys.    |
-| `commitgen login`       | Log in to your CommitGen account.              |
-| `commitgen dashboard`   | Open the web dashboard to manage credits.      |
-| `commitgen buy-credits` | Purchase more credits for the hosted provider. |
+### 🧠 History Learning
 
-### Options
+The tool learns from your previous commit messages to match your personal or team's style. This is enabled by default.
 
-| Option                | Description                                    |
-| :-------------------- | :--------------------------------------------- |
-| `-m, --message <msg>` | Use a specific commit message (skips AI).      |
-| `--no-verify`         | Bypass pre-commit hooks.                       |
-| `--model <id>`        | Override the configured AI model for this run. |
-| `--no-use-ai`         | Force rule-based generation (offline mode).    |
+To disable:
+
+```bash
+commitgen --no-history
+```
+
+### 🎫 Issue Linking
+
+If your branch name contains an issue ID (e.g., `feat/PROJ-123-new-auth`), CommitGen will automatically append the ticket reference to your commit message (e.g., `feat: add auth logic (PROJ-123)`).
+
+To disable:
+
+```bash
+commitgen --no-issues
+```
+
+## Command Reference
+
+### Main Commands
+
+| Command                 | Description                                                      |
+| :---------------------- | :--------------------------------------------------------------- |
+| `commitgen`             | **Default.** Analyze staged changes and generate commit options. |
+| `commitgen login`       | Log in/Sign up for the hosted credit service.                    |
+| `commitgen config`      | Switch between Hosted and BYO-Key providers or change models.    |
+| `commitgen dashboard`   | Open the web dashboard to manage credits and history.            |
+| `commitgen buy-credits` | Purchase additional credits for the hosted service.              |
+| `commitgen show-config` | Display your current configuration settings.                     |
+
+### Options & Flags
+
+| Flag                 | Description                                             |
+| :------------------- | :------------------------------------------------------ |
+| `-p, --push`         | Automatically push to remote after a successful commit. |
+| `-n, --noverify`     | Skip git pre-commit hooks (`--no-verify`).              |
+| `-m, --multi-commit` | Enable atomic multi-commit suggestions.                 |
+| `--model <id>`       | Use a specific model (e.g., `gemini-1.5-pro`).          |
+| `--no-use-ai`        | Force offline rule-based generation.                    |
+| `--no-history`       | Disable style learning from git history.                |
+| `--no-issues`        | Disable automatic issue tracking number linking.        |
+
+## How to Get a Google AI API Key
+
+1.  Go to [Google AI Studio](https://aistudio.google.com/app/apikey) and sign in.
+2.  Click **"Create API key"**.
+3.  Copy the key string (starts with `AIza...`).
+4.  Run `commitgen config` and paste it in.
 
 ## License
 
