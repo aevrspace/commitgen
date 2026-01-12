@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.3](https://github.com/aevrHQ/commitgen/compare/v0.4.2...v0.4.3) (2026-01-12)
+
+
+### Features
+
+* **cli:** Add commitgen cli tool with ai-powered commit generation. ([707e114](https://github.com/aevrHQ/commitgen/commit/707e114c601cb266f3b3464e85b17ac5ea812c85))
+* **components/dashboard:** Improve usage history data visualization. ([7e8afb7](https://github.com/aevrHQ/commitgen/commit/7e8afb7251d51b0c0ac13f1af7fef7ee67050d89))
+* **diff-processor:** Improve diff processing and file prioritization. ([b805c65](https://github.com/aevrHQ/commitgen/commit/b805c651ea8f2c4b92fe1ebc84970f29f827abed))
+
+
+### Bug Fixes
+
+* **ui:** Add error handling to DashboardView and UsageHistory components with ErrorBoundary component. ([f97e391](https://github.com/aevrHQ/commitgen/commit/f97e391a00672c983d4ce26e9bc7a1edf4480903))
+* **ui:** Add reusable UI components and improve dashboard. ([4510d86](https://github.com/aevrHQ/commitgen/commit/4510d86b693236a8e24b269b9c9ad44c1638f661))
+
+
+### Documentation
+
+* **cli:** Add CLI usage notes and advanced features. ([bbb3587](https://github.com/aevrHQ/commitgen/commit/bbb35870244035f3f035645f927e611cbd470895))
+
 ### [0.4.2](https://github.com/aevrHQ/commitgen/compare/v0.4.1...v0.4.2) (2026-01-11)
 
 
