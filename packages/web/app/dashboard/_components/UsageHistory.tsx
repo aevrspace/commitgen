@@ -233,8 +233,54 @@ const TransactionRow = ({ tx }: { tx: Transaction }) => {
         <CollapsibleContent asChild>
           <TableRow className="border-b border-neutral-100 dark:border-neutral-800">
             <TableCell colSpan={1} className="p-0">
-              <div className="bg-neutral-50 p-4 text-xs font-mono text-neutral-600 dark:bg-neutral-900 dark:text-neutral-400 rounded-b-lg mb-2 mx-1">
-                <pre>{JSON.stringify(tx, null, 2)}</pre>
+              <div className="mx-1 mb-2 rounded-b-lg bg-neutral-50 p-4 dark:bg-neutral-900">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Transaction ID
+                    </span>
+                    <span className="font-mono text-xs text-neutral-700 dark:text-neutral-300">
+                      {tx._id}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Status
+                    </span>
+                    <span className="capitalize text-neutral-700 dark:text-neutral-300">
+                      {tx.status}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Amount
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {(tx.amount / 100).toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Date
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {new Date(tx.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {tx.metadata?.provider && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-neutral-500">
+                        Provider
+                      </span>
+                      <span className="capitalize text-neutral-700 dark:text-neutral-300">
+                        {tx.metadata.provider}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </TableCell>
           </TableRow>
@@ -384,8 +430,51 @@ const CommitRow = ({ entry }: { entry: UsageEntry }) => {
         <CollapsibleContent asChild>
           <TableRow className="border-b border-neutral-100 dark:border-neutral-800">
             <TableCell colSpan={1} className="p-0">
-              <div className="bg-neutral-50 p-4 text-xs font-mono text-neutral-600 dark:bg-neutral-900 dark:text-neutral-400 rounded-b-lg mb-2 mx-1">
-                <pre>{JSON.stringify(entry, null, 2)}</pre>
+              <div className="mx-1 mb-2 rounded-b-lg bg-neutral-50 p-4 dark:bg-neutral-900">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Model
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {entry.metadata?.model || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Diff Length
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {entry.metadata?.diffLength?.toLocaleString() || 0}{" "}
+                      characters
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Generated Length
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {entry.metadata?.responseLength?.toLocaleString() || 0}{" "}
+                      characters
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Date
+                    </span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <span className="text-xs font-medium text-neutral-500">
+                      Usage ID
+                    </span>
+                    <span className="font-mono text-xs text-neutral-700 dark:text-neutral-300">
+                      {entry._id}
+                    </span>
+                  </div>
+                </div>
               </div>
             </TableCell>
           </TableRow>
