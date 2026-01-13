@@ -1,6 +1,6 @@
 {
   "name": "@untools/commitgen",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "CLI to create generate commit messages",
   "main": "dist/index.js",
   "bin": {
@@ -28,7 +28,8 @@
     "openai"
   ],
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "engines": {
     "node": ">=14.0.0"
