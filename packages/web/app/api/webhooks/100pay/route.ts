@@ -3,6 +3,7 @@ import { Transaction } from "@/models/Transaction";
 import { Wallet } from "@/models/Wallet";
 import { createWebhookEventLogger } from "@/services/webhookEventLogger";
 import dbConnect from "@/lib/db";
+import { calculateDepositCredits } from "@/utils/billing";
 
 export async function POST(request: Request) {
   const verificationToken = request.headers.get("verification-token");
@@ -36,8 +37,24 @@ export async function POST(request: Request) {
 
       if (transaction && transaction.status !== "successful") {
         // Get credits from metadata or amount field
-        const creditsToCredit =
+        const expectedCredits =
           transaction.metadata?.credits || transaction.amount || 0;
+
+        // Calculate actual credits based on payment
+        // Default to expected if paid amount isn't available (should be for 100pay)
+        let creditsToCredit = expectedCredits;
+
+        const charge = event.data.charge;
+        const paidAmount = charge?.status?.total_paid;
+        const billingAmount = parseFloat(charge?.billing?.amount || "0");
+
+        if (typeof paidAmount === "number" && billingAmount > 0) {
+          creditsToCredit = calculateDepositCredits(
+            paidAmount,
+            billingAmount,
+            expectedCredits
+          );
+        }
 
         // Ensure wallet exists
         const wallet = await Wallet.getOrCreate(transaction.user, "CREDITS");
