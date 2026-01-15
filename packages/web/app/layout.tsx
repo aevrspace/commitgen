@@ -84,6 +84,12 @@ export default function RootLayout({
             </div>
             <nav className="hidden gap-6 sm:flex">
               <Link
+                href="/pricing"
+                className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+              >
+                Pricing
+              </Link>
+              <Link
                 href="https://github.com/aevrhq/commitgen"
                 className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
                 target="_blank"
@@ -106,6 +112,12 @@ export default function RootLayout({
                 reserved.
               </p>
               <div className="flex gap-6">
+                <Link
+                  href="/pricing"
+                  className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                >
+                  Pricing
+                </Link>
                 <Link
                   href="https://github.com/aevrhq/commitgen"
                   className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"

@@ -4,7 +4,7 @@ import dbConnect from "@/lib/db";
 import AuthToken from "@/models/AuthToken";
 import { Transaction } from "@/models/Transaction";
 import { Wallet } from "@/models/Wallet";
-import { initializePaystackPayment, CREDITS_PER_USD } from "@/lib/payment";
+import { initializePaystackPayment, getCreditsPerUsd } from "@/lib/payment";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 import User from "@/models/User";
@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const priceInUsd = amountOfCredits / CREDITS_PER_USD;
+    // Get dynamic credits per USD from platform settings
+    const creditsPerUsd = await getCreditsPerUsd();
+    const priceInUsd = amountOfCredits / creditsPerUsd;
 
     // Fetch Dynamic Rate
     let ngnRate = 1500; // Fallback

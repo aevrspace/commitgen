@@ -1,5 +1,27 @@
+import dbConnect from "@/lib/db";
+import PlatformSettings from "@/models/PlatformSettings";
+
+// Default fallback values
 export const CREDITS_PER_USD = 80;
 export const USD_TO_NGN_RATE = 1500; // Fixed rate for MVP, or we can fetch dynamic if needed.
+
+/**
+ * Get the current credits per USD from platform settings.
+ * Falls back to CREDITS_PER_USD constant if database is unavailable.
+ */
+export async function getCreditsPerUsd(): Promise<number> {
+  try {
+    await dbConnect();
+    const settings = await PlatformSettings.getSettings();
+    return settings.creditsPerUsd;
+  } catch (error) {
+    console.error(
+      "Failed to get dynamic credits per USD, using fallback:",
+      error
+    );
+    return CREDITS_PER_USD;
+  }
+}
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
