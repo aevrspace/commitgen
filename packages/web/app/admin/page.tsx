@@ -1,9 +1,9 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/aevr/button";
 import { toast } from "sonner";
-import { Setting2, ArrowRotateRight, TickCircle } from "iconsax-react";
+import { Setting2, ArrowRotateRight, TickCircle, Lock } from "iconsax-react";
+import { usePersistedState } from "@/hooks/aevr/use-persisted-state";
 
 interface PlatformSettings {
   creditsPerUsd: number;
@@ -12,17 +12,70 @@ interface PlatformSettings {
   updatedAt: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  role: "user" | "admin";
+}
+
 export default function AdminPage() {
-  const [adminKey, setAdminKey] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Sync with Global Auth State
+  const { state: token, isHydrated } = usePersistedState<string>("", {
+    storageKey: "authToken",
+  });
 
   // Form state
   const [creditsPerUsd, setCreditsPerUsd] = useState(80);
   const [minPurchaseCredits, setMinPurchaseCredits] = useState(10);
   const [freeCreditsOnSignup, setFreeCreditsOnSignup] = useState(50);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (!token) {
+      setAuthLoading(false);
+      setLoading(false);
+      return;
+    }
+
+    const init = async () => {
+      try {
+        setAuthLoading(true);
+        // 1. Fetch User Profile to check role
+        const userRes = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!userRes.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
+
+        const userData = await userRes.json();
+        setUser(userData);
+
+        if (userData.role !== "admin") {
+          setAuthLoading(false);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Fetch Settings if Admin
+        await fetchSettings();
+      } catch (error) {
+        console.error("Initialization failed:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    init();
+  }, [token, isHydrated]);
 
   // Fetch current settings
   const fetchSettings = async () => {
@@ -44,24 +97,10 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  // Handle authentication
-  const handleAuthenticate = () => {
-    if (adminKey.trim()) {
-      setIsAuthenticated(true);
-      toast.success("Authenticated");
-    } else {
-      toast.error("Please enter an admin key");
-    }
-  };
-
   // Handle save
   const handleSave = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please authenticate first");
+    if (!token) {
+      toast.error("Please log in first");
       return;
     }
 
@@ -71,7 +110,7 @@ export default function AdminPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": adminKey,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           creditsPerUsd,
@@ -106,45 +145,67 @@ export default function AdminPage() {
       minPurchaseCredits !== settings.minPurchaseCredits ||
       freeCreditsOnSignup !== settings.freeCreditsOnSignup);
 
+  if (!isHydrated || authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse text-neutral-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+            <Lock variant="Bulk" size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+            Access Denied
+          </h1>
+          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+            You do not have permission to view this page.
+          </p>
+          <div className="mt-6">
+            <Button
+              variant="primary"
+              onClick={() => (window.location.href = "/")}
+            >
+              Return Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <div className="mx-auto max-w-2xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-            <Setting2 variant="Bulk" size={24} color="currentColor" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
-              Admin Settings
-            </h1>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Manage platform configuration
-            </p>
-          </div>
-        </div>
-
-        {/* Authentication */}
-        {!isAuthenticated && (
-          <div className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-            <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-              Authentication Required
-            </h2>
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={adminKey}
-                onChange={(e) => setAdminKey(e.target.value)}
-                placeholder="Enter admin API key"
-                className="flex-1 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
-                onKeyDown={(e) => e.key === "Enter" && handleAuthenticate()}
-              />
-              <Button variant="primary" onClick={handleAuthenticate}>
-                Authenticate
-              </Button>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+              <Setting2 variant="Bulk" size={24} color="currentColor" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                Admin Settings
+              </h1>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Manage platform configuration
+              </p>
             </div>
           </div>
-        )}
+          <div className="text-right">
+            <div className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+              {user.email}
+            </div>
+            <div className="text-xs text-neutral-500 uppercase tracking-wider">
+              Admin Access
+            </div>
+          </div>
+        </div>
 
         {/* Settings Form */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
@@ -183,7 +244,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     setCreditsPerUsd(parseInt(e.target.value) || 1)
                   }
-                  disabled={!isAuthenticated}
+                  disabled={loading}
                   className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800"
                 />
                 <p className="mt-1 text-xs text-neutral-500">
@@ -203,7 +264,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     setMinPurchaseCredits(parseInt(e.target.value) || 1)
                   }
-                  disabled={!isAuthenticated}
+                  disabled={loading}
                   className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800"
                 />
                 <p className="mt-1 text-xs text-neutral-500">
@@ -223,7 +284,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     setFreeCreditsOnSignup(parseInt(e.target.value) || 0)
                   }
-                  disabled={!isAuthenticated}
+                  disabled={loading}
                   className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800"
                 />
                 <p className="mt-1 text-xs text-neutral-500">
@@ -250,7 +311,7 @@ export default function AdminPage() {
                 <Button
                   variant="primary"
                   onClick={handleSave}
-                  disabled={!isAuthenticated || saving || !hasChanges}
+                  disabled={saving || !hasChanges}
                   className="flex items-center gap-2"
                 >
                   {saving ? (

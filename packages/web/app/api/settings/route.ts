@@ -27,20 +27,45 @@ export async function GET() {
   }
 }
 
+import { cookies } from "next/headers";
+import AuthToken from "@/models/AuthToken";
+import User from "@/models/User";
+
 /**
  * PATCH /api/settings
  *
  * Admin-only endpoint to update platform settings.
- * Requires ADMIN_API_KEY in request headers.
+ * Requires Authentication and Admin Role.
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Admin authentication via API key
-    const adminKey = request.headers.get("x-admin-key");
-    const expectedKey = process.env.ADMIN_API_KEY;
+    await dbConnect();
 
-    if (!expectedKey || adminKey !== expectedKey) {
+    // 1. Get Auth Token from Header or Cookie
+    let token = request.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+      const cookieStore = await cookies();
+      token = cookieStore.get("authToken")?.value;
+    }
+
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 2. Validate Token
+    const authToken = await AuthToken.findOne({
+      token,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!authToken) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
+    // 3. Check User Role
+    const user = await User.findById(authToken.userId);
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Access Denied" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -90,8 +115,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    await dbConnect();
-    const settings = await PlatformSettings.updateSettings(updates);
+    const settings = await PlatformSettings.updateSettings(updates, user._id);
 
     return NextResponse.json({
       success: true,
