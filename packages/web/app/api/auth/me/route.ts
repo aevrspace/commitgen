@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       id: user._id,
       email: user.email,
+      role: user.role,
       credits: totalCredits,
       walletBalance, // Expose for debugging/transparency
       legacyCredits, // Expose for debugging/transparency
