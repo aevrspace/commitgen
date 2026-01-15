@@ -75,6 +75,23 @@ export default function CreditsPage() {
   const [calculatedCredits, setCalculatedCredits] = useState<number>(100);
   const [calculatedAmount, setCalculatedAmount] = useState<number>(0);
   const [creditCostInUsd, setCreditCostInUsd] = useState(1);
+  const [creditsPerUsd, setCreditsPerUsd] = useState(80); // Dynamic from API
+
+  // Fetch dynamic credits per USD from platform settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          setCreditsPerUsd(data.creditsPerUsd || 80);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Effect to calculate based on input mode
   useEffect(() => {
@@ -91,13 +108,13 @@ export default function CreditsPage() {
         if (usdValue === null) return;
 
         setCreditCostInUsd(usdValue);
-        // 1 USD = 80 Credits
-        const credits = Math.floor(usdValue * 80);
+        // Use dynamic credits per USD
+        const credits = Math.floor(usdValue * creditsPerUsd);
         setCalculatedCredits(credits);
       } else {
         // Credits mode: calculate amount from credits
-        // credits / 80 = USD value
-        const usdValue = inputCredits / 80;
+        // Use dynamic credits per USD
+        const usdValue = inputCredits / creditsPerUsd;
         setCreditCostInUsd(usdValue);
         setCalculatedCredits(inputCredits);
 
@@ -120,6 +137,7 @@ export default function CreditsPage() {
     baseCurrency,
     rates,
     convertCurrency,
+    creditsPerUsd,
   ]);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
