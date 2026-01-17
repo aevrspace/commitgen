@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (!authToken) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           required: creditsRequired,
           tier: tier.name,
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = `You are an expert developer writing a git commit message. Analyze the git diff provided by the user and generate a conventional commit message.
 
-IMPORTANT: Focus on WHAT the code changes do, not on the size or format of the diff itself. Never mention "chars", "tokens", "truncated", or diff statistics in your commit message.
+IMPORTANT: Output ONLY the raw commit message. Do not include any introductory text, conversational filler, or explanations. Do not use markdown code blocks or backticks.
 
 ## Format
 <type>(<scope>): <short description>
@@ -103,6 +103,7 @@ IMPORTANT: Focus on WHAT the code changes do, not on the size or format of the d
 3. Each bullet point should describe a SPECIFIC code change you see in the diff
 4. Be descriptive: "Add OTPInput component with 6-digit validation" NOT "Update code"
 5. Mention component names, function names, or file names when relevant
+6. Do NOT start the response with "Here is the commit message" or similar. Just the message.
 
 ## Example
 feat(landing): add authentication drawer and landing screen UI
@@ -169,7 +170,7 @@ Now analyze the git diff and generate a commit message following these rules.`;
     console.error("Generate error:", error);
     return NextResponse.json(
       { error: "Internal server error", requestId },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
