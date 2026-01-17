@@ -10,37 +10,44 @@ export async function buyCreditsCommand() {
 
   console.log(chalk.cyan("\n💎 Buy CommitGen Credits\n"));
 
-  const { amount } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "amount",
-      message: "Select credit pack:",
-      choices: [
-        { name: "Standard Pack (80 Credits) - $1.00", value: 80 },
-        { name: "Pro Pack (450 Credits) - $5.00", value: 450 },
-        { name: "Mega Pack (1000 Credits) - $10.00", value: 1000 },
-      ],
-    },
-  ]);
-
-  const { provider } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "provider",
-      message: "Select payment provider:",
-      choices: [
-        { name: "Paystack", value: "paystack" },
-        { name: "100Pay", value: "100pay" },
-      ],
-    },
-  ]);
-
-  console.log(chalk.yellow("\nInitializing payment..."));
-
   const WEB_APP_URL =
     process.env.COMMITGEN_WEB_URL || "https://commitgen.aevr.space";
 
   try {
+    const packagesResponse = await fetch(`${WEB_APP_URL}/api/credits/packages`);
+    if (!packagesResponse.ok) {
+      throw new Error("Failed to fetch credit packages");
+    }
+    const packages: any[] = await packagesResponse.json();
+
+    const choices = packages.map((pkg) => ({
+      name: pkg.label,
+      value: pkg.value,
+    }));
+
+    const { amount } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "amount",
+        message: "Select credit pack:",
+        choices: choices,
+      },
+    ]);
+
+    const { provider } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "provider",
+        message: "Select payment provider:",
+        choices: [
+          { name: "Paystack", value: "paystack" },
+          { name: "100Pay", value: "100pay" },
+        ],
+      },
+    ]);
+
+    console.log(chalk.yellow("\nInitializing payment..."));
+
     const response = await fetch(`${WEB_APP_URL}/api/payment/initialize`, {
       method: "POST",
       headers: {
@@ -67,13 +74,13 @@ export async function buyCreditsCommand() {
     } else {
       url = `${WEB_APP_URL}/credits`;
       console.log(
-        chalk.blue("ℹ For 100Pay, please complete the payment on our website.")
+        chalk.blue("ℹ For 100Pay, please complete the payment on our website."),
       );
     }
 
     if (url) {
       console.log(
-        chalk.white(`\n👉 Please open this URL to complete payment:\n`)
+        chalk.white(`\n👉 Please open this URL to complete payment:\n`),
       );
       console.log(chalk.underline.blue(url));
       console.log("\n");
@@ -81,41 +88,54 @@ export async function buyCreditsCommand() {
       if (data.reference) {
         console.log(chalk.yellow("⏳ Waiting for payment confirmation..."));
 
-        const pollInterval = setInterval(async () => {
-          try {
-            const statusRes = await fetch(
-              `${WEB_APP_URL}/api/payment/status?reference=${data.reference}`
-            );
-            if (statusRes.ok) {
-              const statusData: any = await statusRes.json();
-              if (statusData.status === "confirmed") {
-                clearInterval(pollInterval);
-                console.log(
-                  chalk.green(
-                    "\n🎉 Payment confirmed! You can now generate commits."
-                  )
-                );
-                process.exit(0);
+        return new Promise<boolean>((resolve) => {
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusRes = await fetch(
+                `${WEB_APP_URL}/api/payment/status?reference=${data.reference}`,
+              );
+              if (statusRes.ok) {
+                const statusData: any = await statusRes.json();
+                if (statusData.status === "confirmed") {
+                  clearInterval(pollInterval);
+                  console.log(
+                    chalk.green(
+                      "\n🎉 Payment confirmed! You can now generate commits.",
+                    ),
+                  );
+                  resolve(true);
+                }
               }
+            } catch (e) {
+              // ignore errors during poll
             }
-          } catch (e) {
-            // ignore errors during poll
-          }
-        }, 3000);
+          }, 3000);
 
-        // Timeout after 5 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          console.log(
-            chalk.red(
-              "\n❌ Polling timed out. Please check your dashboard for status."
-            )
-          );
-          process.exit(1);
-        }, 300000);
+          // Timeout after 5 minutes
+          setTimeout(() => {
+            clearInterval(pollInterval);
+            console.log(
+              chalk.red(
+                "\n❌ Polling timed out. Please check your dashboard for status.",
+              ),
+            );
+            resolve(false);
+          }, 300000);
+        });
       }
     }
+
+    return false;
   } catch (error: any) {
+    // Gracefully handle SIGINT / Force close
+    if (
+      error.message.includes("User force closed") ||
+      error.name === "ExitPromptError"
+    ) {
+      console.log(chalk.yellow("\n\n👋 Cancelled by user"));
+      return false;
+    }
+
     console.error(chalk.red(`❌ Error: ${error.message}`));
     if (
       error.message.includes("unauthorized") ||
@@ -123,9 +143,10 @@ export async function buyCreditsCommand() {
     ) {
       console.log(
         chalk.yellow(
-          "💡 Please make sure you are logged in. Run 'commitgen login'"
-        )
+          "💡 Please make sure you are logged in. Run 'commitgen login'",
+        ),
       );
     }
+    return false;
   }
 }
