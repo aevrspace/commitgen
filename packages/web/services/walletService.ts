@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 
 interface UsageMetadata {
   model?: string;
+  hint?: string;
   diffLength?: number;
   processedDiffLength?: number;
   estimatedTokens?: number;
@@ -82,7 +83,7 @@ class WalletService {
    */
   async debit(
     userId: string,
-    options: DebitOptions
+    options: DebitOptions,
   ): Promise<{
     transaction: typeof Transaction.prototype;
     usage: typeof CreditUsage.prototype;
@@ -127,7 +128,7 @@ class WalletService {
     await usage.save();
 
     logger?.info(
-      `[WalletService] Debited ${creditsUsed} credit(s) from user ${userId} for ${type}`
+      `[WalletService] Debited ${creditsUsed} credit(s) from user ${userId} for ${type}`,
     );
 
     return { transaction, usage };
@@ -139,7 +140,7 @@ class WalletService {
    */
   async credit(
     userId: string,
-    options: CreditOptions
+    options: CreditOptions,
   ): Promise<typeof Transaction.prototype> {
     const {
       credits,
@@ -169,7 +170,7 @@ class WalletService {
     });
 
     logger?.info(
-      `[WalletService] Credited ${credits} credit(s) to user ${userId}`
+      `[WalletService] Credited ${credits} credit(s) to user ${userId}`,
     );
 
     return transaction;
@@ -180,7 +181,7 @@ class WalletService {
    */
   async createPendingCredit(
     userId: string,
-    options: CreditOptions
+    options: CreditOptions,
   ): Promise<typeof Transaction.prototype> {
     const {
       credits,
@@ -210,7 +211,7 @@ class WalletService {
     });
 
     logger?.info(
-      `[WalletService] Created pending credit of ${credits} credit(s) for user ${userId}`
+      `[WalletService] Created pending credit of ${credits} credit(s) for user ${userId}`,
     );
 
     return transaction;
@@ -221,20 +222,20 @@ class WalletService {
    */
   async confirmTransaction(
     providerReference: string,
-    additionalMetadata?: Record<string, unknown>
+    additionalMetadata?: Record<string, unknown>,
   ): Promise<typeof Transaction.prototype | null> {
     const transaction = await Transaction.findOne({ providerReference });
 
     if (!transaction) {
       logger?.warn(
-        `[WalletService] Transaction not found: ${providerReference}`
+        `[WalletService] Transaction not found: ${providerReference}`,
       );
       return null;
     }
 
     if (transaction.status === "successful") {
       logger?.info(
-        `[WalletService] Transaction already confirmed: ${providerReference}`
+        `[WalletService] Transaction already confirmed: ${providerReference}`,
       );
       return transaction;
     }
@@ -260,7 +261,7 @@ class WalletService {
       limit?: number;
       type?: string;
       symbol?: string;
-    } = {}
+    } = {},
   ): Promise<{
     transactions: (typeof Transaction.prototype)[];
     total: number;

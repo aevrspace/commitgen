@@ -3,7 +3,13 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { BaseProvider } from "./base";
-import { GitAnalysis, CommitMessage, AIProvider } from "../types";
+import {
+  GitAnalysis,
+  CommitMessage,
+  AIProvider,
+  GenerationResult,
+  GenerateOptions,
+} from "../types";
 
 export class VercelGoogleProvider extends BaseProvider implements AIProvider {
   name = "vercel-google";
@@ -17,12 +23,15 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
 
     if (!this.apiKey) {
       throw new Error(
-        "Google API key is required. Set GOOGLE_GENERATIVE_AI_API_KEY environment variable or pass it in config."
+        "Google API key is required. Set GOOGLE_GENERATIVE_AI_API_KEY environment variable or pass it in config.",
       );
     }
   }
 
-  async generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]> {
+  async generateCommitMessage(
+    analysis: GitAnalysis,
+    options?: GenerateOptions,
+  ): Promise<GenerationResult> {
     this.analysis = analysis;
 
     try {
@@ -30,9 +39,14 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
         apiKey: this.apiKey,
       });
 
+      let systemPrompt = this.buildSystemPrompt();
+      if (options?.hint) {
+        systemPrompt += `\n\n## User Instructions\nThe user has provided the following specific instructions/hint. You MUST incorporate this into your generation:\n"${options.hint}"`;
+      }
+
       const { text } = await generateText({
         model: google(this.model),
-        system: this.buildSystemPrompt(),
+        system: systemPrompt,
         prompt: this.buildAnalysisPrompt(analysis),
         temperature: 0.7,
         maxRetries: 2, // Reduce retries to fail faster
@@ -45,7 +59,7 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
       }
 
       const suggestions: CommitMessage[] = JSON.parse(jsonMatch[0]);
-      return suggestions.slice(0, 5);
+      return { messages: suggestions.slice(0, 5) };
     } catch (error) {
       // Check for specific error types
       if (error instanceof Error) {
@@ -54,7 +68,7 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
         // Handle rate limiting / overload
         if (errorMsg.includes("overloaded") || errorMsg.includes("503")) {
           throw new Error(
-            "The Google Gemini API is currently overloaded. Please try again in a few moments, or use '--no-use-ai' for rule-based suggestions."
+            "The Google Gemini API is currently overloaded. Please try again in a few moments, or use '--no-use-ai' for rule-based suggestions.",
           );
         }
 
@@ -65,14 +79,14 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
           errorMsg.includes("403")
         ) {
           throw new Error(
-            "API key error. Please run 'commitgen config' to update your configuration."
+            "API key error. Please run 'commitgen config' to update your configuration.",
           );
         }
 
         // Handle network errors
         if (errorMsg.includes("network") || errorMsg.includes("econnrefused")) {
           throw new Error(
-            "Network error. Please check your internet connection."
+            "Network error. Please check your internet connection.",
           );
         }
       }
@@ -90,16 +104,17 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
     const suggestions: CommitMessage[] = [];
 
     const hasTests = filesChanged.some(
-      (f) => f.includes("test") || f.includes("spec") || f.includes("__tests__")
+      (f) =>
+        f.includes("test") || f.includes("spec") || f.includes("__tests__"),
     );
     const hasDocs = filesChanged.some(
-      (f) => f.includes("README") || f.includes(".md")
+      (f) => f.includes("README") || f.includes(".md"),
     );
     const hasConfig = filesChanged.some(
       (f) =>
         f.includes("config") ||
         f.includes(".json") ||
-        f.includes("package.json")
+        f.includes("package.json"),
     );
 
     if (additions > deletions * 2 && additions > 20) {

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const user: any = authToken.userId;
     const walletService = createWalletService();
 
-    const { diff, model = "llama-3.1-8b-instant" } = await req.json();
+    const { diff, model = "llama-3.1-8b-instant", hint } = await req.json();
 
     if (!diff) {
       return NextResponse.json({ error: "Diff is required" }, { status: 400 });
@@ -116,8 +116,12 @@ feat(landing): add authentication drawer and landing screen UI
 
 Now analyze the git diff and generate a commit message following these rules.`;
 
+    const finalSystemPrompt = hint
+      ? `${systemPrompt}\n\n## User Instructions\nThe user has provided the following specific instructions/hint. You MUST incorporate this into your generation:\n"${hint}"`
+      : systemPrompt;
+
     const result = await provider.generateText({
-      system: systemPrompt,
+      system: finalSystemPrompt,
       messages: [{ role: "user", content: processed.content }],
     });
 
@@ -131,6 +135,7 @@ Now analyze the git diff and generate a commit message following these rules.`;
       creditsUsed: creditsRequired,
       metadata: {
         model,
+        hint: hint || undefined,
         diffLength: diff.length,
         processedDiffLength: processed.content.length,
         estimatedTokens: tokens,

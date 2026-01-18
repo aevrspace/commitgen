@@ -8,11 +8,6 @@ export interface CommitMessage {
   breaking?: boolean;
 }
 
-export interface AIProvider {
-  name: string;
-  generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]>;
-}
-
 export interface ProviderConfig {
   provider:
     | "vercel-google"
@@ -64,7 +59,25 @@ export interface GitAnalysis {
   diff: string;
 }
 
+export interface GenerationUsage {
+  cost: number;
+  remaining: number;
+  tier?: string;
+}
+
+export interface GenerationResult {
+  messages: CommitMessage[];
+  usage?: GenerationUsage;
+}
+
+export interface GenerateOptions {
+  hint?: string;
+}
+
 export interface AIProvider {
   name: string;
-  generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]>;
+  generateCommitMessage(
+    analysis: GitAnalysis,
+    options?: GenerateOptions,
+  ): Promise<GenerationResult>;
 }

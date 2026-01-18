@@ -306,11 +306,12 @@ class CommitGen {
 
     let suggestions: CommitMessage[] = [];
     let usingFallback = false;
+    let hint: string | undefined = undefined;
 
     if (options.useAi) {
-      let retryAI = true;
-      while (retryAI) {
-        retryAI = false; // Default to no retry unless confirmed buy
+      let activeLoop = true;
+      while (activeLoop) {
+        activeLoop = false; // Default to exit unless regenerate/retry
         try {
           const configManager = new ConfigManager();
           let providerConfig = configManager.getProviderConfig();
@@ -344,6 +345,8 @@ class CommitGen {
             if (result.shouldConfigure) {
               await configureCommand();
               providerConfig = configManager.getProviderConfig();
+              activeLoop = true;
+              continue;
             } else {
               console.log(
                 chalk.gray("Falling back to rule-based suggestions...\n"),
@@ -357,14 +360,29 @@ class CommitGen {
             const modelDisplay = providerConfig.model || "default";
 
             const provider = createProvider(providerConfig);
-            suggestions = await withLoading(
+            const { messages: generatedMessages, usage } = await withLoading(
               `Generating commit messages using ${providerConfig.provider} (${modelDisplay})...`,
-              async () => await provider.generateCommitMessage(analysis),
+              async () =>
+                await provider.generateCommitMessage(
+                  analysis,
+                  hint ? { hint } : undefined,
+                ),
               "Commit messages generated",
             );
 
+            suggestions = generatedMessages;
+
             if (!suggestions || suggestions.length === 0) {
               throw new Error("No suggestions generated");
+            }
+
+            if (usage) {
+              console.log(
+                chalk.gray(
+                  `   💎 Credits: ${chalk.yellow(usage.cost)} used | ${chalk.green(usage.remaining)} remaining` +
+                    (usage.tier ? ` (${usage.tier})` : ""),
+                ),
+              );
             }
 
             // Personalize suggestions based on history
@@ -387,6 +405,24 @@ class CommitGen {
                 ),
               }));
             }
+
+            // Interactive commit selection
+            const result = await this.commitInteractive(
+              suggestions,
+              analysis,
+              issueRef,
+              options,
+            );
+
+            if (result.action === "regenerate") {
+              activeLoop = true;
+              hint = result.hint;
+              console.log(chalk.blue("\n🔄 Regenerating with hint..."));
+              continue;
+            }
+
+            // If we are here, we are done
+            return;
           }
         } catch (error) {
           const errorMessage =
@@ -417,7 +453,7 @@ class CommitGen {
             if (result && result.buyCredits) {
               const purchased = await buyCreditsCommand();
               if (purchased) {
-                retryAI = true;
+                activeLoop = true;
                 continue; // Retry the loop
               }
             }
@@ -463,6 +499,7 @@ class CommitGen {
           );
           suggestions = this.getFallbackSuggestions(analysis);
           usingFallback = true;
+          // Loop breaks, falls through to non-AI completion
         }
       }
     } else {
@@ -473,6 +510,7 @@ class CommitGen {
       usingFallback = true;
     }
 
+    // Fallback path or failed AI path
     await this.commitInteractive(suggestions, analysis, issueRef, options);
   }
 
@@ -523,48 +561,64 @@ class CommitGen {
         ),
       );
 
-      // Generate suggestions for this group
-      let suggestions = [group.suggestedMessage];
-      if (options.useAi) {
-        try {
-          const configManager = new ConfigManager();
-          let providerConfig = configManager.getProviderConfig();
+      let activeLoop = true;
+      let hint: string | undefined = undefined;
 
-          // Override model if specified
-          if (options.model) {
-            providerConfig = { ...providerConfig, model: options.model };
-          }
+      while (activeLoop) {
+        activeLoop = false;
+        // Generate suggestions for this group
+        let suggestions = [group.suggestedMessage];
+        if (options.useAi) {
+          try {
+            const configManager = new ConfigManager();
+            let providerConfig = configManager.getProviderConfig();
 
-          if (
-            providerConfig.apiKey ||
-            this.hasEnvironmentApiKey(providerConfig.provider)
-          ) {
-            const provider = createProvider(providerConfig);
-            const loader = new LoadingIndicator("Generating commit message...");
-            loader.start();
-
-            try {
-              suggestions = await provider.generateCommitMessage(
-                group.analysis,
-              );
-              loader.succeed("Generated");
-            } catch (err) {
-              loader.stop();
-              throw err;
+            // Override model if specified
+            if (options.model) {
+              providerConfig = { ...providerConfig, model: options.model };
             }
+
+            if (
+              providerConfig.apiKey ||
+              this.hasEnvironmentApiKey(providerConfig.provider)
+            ) {
+              const provider = createProvider(providerConfig);
+              const loader = new LoadingIndicator(
+                "Generating commit message...",
+              );
+              loader.start();
+
+              try {
+                const { messages } = await provider.generateCommitMessage(
+                  group.analysis,
+                  hint ? { hint } : undefined,
+                );
+                suggestions = messages;
+                loader.succeed("Generated");
+              } catch (err) {
+                loader.stop();
+                throw err;
+              }
+            }
+          } catch (error) {
+            console.log(chalk.gray("Using suggested message for this commit"));
           }
-        } catch (error) {
-          console.log(chalk.gray("Using suggested message for this commit"));
+        }
+
+        const result = await this.commitInteractive(
+          suggestions,
+          group.analysis,
+          null,
+          options,
+          group.files,
+        );
+
+        if (result.action === "regenerate") {
+          activeLoop = true;
+          hint = result.hint;
+          console.log(chalk.blue("\n🔄 Regenerating with hint..."));
         }
       }
-
-      await this.commitInteractive(
-        suggestions,
-        group.analysis,
-        null,
-        options,
-        group.files,
-      );
     }
 
     console.log(chalk.green.bold("\n✅ All commits completed!"));
@@ -576,7 +630,7 @@ class CommitGen {
     issueRef: any,
     options: CommitGenOptions,
     specificFiles?: string[],
-  ): Promise<void> {
+  ): Promise<{ action: "regenerate" | "done"; hint?: string }> {
     console.log(chalk.cyan.bold("💡 Suggested commit messages:\n"));
 
     const choices = suggestions.map((s, i) => {
@@ -596,9 +650,9 @@ class CommitGen {
     });
 
     choices.push({
-      name: chalk.gray("✏️  Write custom message"),
-      value: -2,
-      short: "Custom message",
+      name: chalk.yellow("🔄 Regenerate suggestions"),
+      value: -3,
+      short: "Regenerate",
     });
 
     const result = await safePrompt<{ selectedIndex: number }>([
@@ -611,7 +665,7 @@ class CommitGen {
       },
     ]);
 
-    if (!result) return;
+    if (!result) return { action: "done" };
 
     const { selectedIndex } = result;
     let commitMessage: string;
@@ -636,7 +690,7 @@ class CommitGen {
         },
       ]);
 
-      if (!actionResult) return;
+      if (!actionResult) return { action: "done" };
 
       if (actionResult.action === "back") {
         return this.commitInteractive(
@@ -659,7 +713,7 @@ class CommitGen {
             },
           },
         ]);
-        if (!editResult) return;
+        if (!editResult) return { action: "done" };
         commitMessage = editResult.edited;
       } else {
         commitMessage = combinedFormatted;
@@ -676,8 +730,17 @@ class CommitGen {
           },
         },
       ]);
-      if (!customResult) return;
+      if (!customResult) return { action: "done" };
       commitMessage = customResult.customMessage;
+    } else if (selectedIndex === -3) {
+      const hintResult = await safePrompt<{ hint: string }>([
+        {
+          type: "input",
+          name: "hint",
+          message: "Enter custom instructions (optional):",
+        },
+      ]);
+      return { action: "regenerate", hint: hintResult?.hint };
     } else {
       let selected = suggestions[selectedIndex];
 
@@ -701,7 +764,7 @@ class CommitGen {
         },
       ]);
 
-      if (!actionResult) return;
+      if (!actionResult) return { action: "done" };
 
       if (actionResult.action === "back") {
         return this.commitInteractive(
@@ -724,7 +787,7 @@ class CommitGen {
             },
           },
         ]);
-        if (!editResult) return;
+        if (!editResult) return { action: "done" };
         commitMessage = editResult.edited;
       } else {
         commitMessage = formatted;
@@ -733,7 +796,7 @@ class CommitGen {
 
     if (!commitMessage.trim()) {
       console.log(chalk.red("\n❌ Commit cancelled - empty message"));
-      return;
+      return { action: "done" };
     }
 
     try {
@@ -760,6 +823,7 @@ class CommitGen {
       console.error(chalk.red("❌ Commit failed:"), error);
       process.exit(1);
     }
+    return { action: "done" };
   }
 
   private getFallbackSuggestions(analysis: GitAnalysis): CommitMessage[] {
