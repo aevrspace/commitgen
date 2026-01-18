@@ -1,12 +1,18 @@
 // ./src/providers/base.ts
 
-import { CommitMessage, GitAnalysis, GenerationResult } from "../types";
+import {
+  CommitMessage,
+  GitAnalysis,
+  GenerationResult,
+  GenerateOptions,
+} from "../types";
 
 export abstract class BaseProvider {
   protected analysis: GitAnalysis | null = null;
 
   abstract generateCommitMessage(
     analysis: GitAnalysis,
+    options?: GenerateOptions,
   ): Promise<GenerationResult>;
 
   protected inferFeatureType(files: string[]): string {

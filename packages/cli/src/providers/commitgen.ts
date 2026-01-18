@@ -4,6 +4,7 @@ import {
   CommitMessage,
   CommitGenProviderConfig,
   GenerationResult,
+  GenerateOptions,
 } from "../types";
 
 export class CommitGenProvider implements AIProvider {
@@ -22,6 +23,7 @@ export class CommitGenProvider implements AIProvider {
 
   async generateCommitMessage(
     analysis: GitAnalysis,
+    options?: GenerateOptions,
   ): Promise<GenerationResult> {
     if (!this.token) {
       throw new Error("Authorization token is required for CommitGen provider");
@@ -36,6 +38,7 @@ export class CommitGenProvider implements AIProvider {
         },
         body: JSON.stringify({
           diff: analysis.diff,
+          hint: options?.hint,
         }),
       });
 

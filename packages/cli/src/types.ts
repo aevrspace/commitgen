@@ -70,7 +70,14 @@ export interface GenerationResult {
   usage?: GenerationUsage;
 }
 
+export interface GenerateOptions {
+  hint?: string;
+}
+
 export interface AIProvider {
   name: string;
-  generateCommitMessage(analysis: GitAnalysis): Promise<GenerationResult>;
+  generateCommitMessage(
+    analysis: GitAnalysis,
+    options?: GenerateOptions,
+  ): Promise<GenerationResult>;
 }

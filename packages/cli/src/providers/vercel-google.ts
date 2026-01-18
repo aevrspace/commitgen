@@ -8,6 +8,7 @@ import {
   CommitMessage,
   AIProvider,
   GenerationResult,
+  GenerateOptions,
 } from "../types";
 
 export class VercelGoogleProvider extends BaseProvider implements AIProvider {
@@ -29,6 +30,7 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
 
   async generateCommitMessage(
     analysis: GitAnalysis,
+    options?: GenerateOptions,
   ): Promise<GenerationResult> {
     this.analysis = analysis;
 
@@ -37,9 +39,14 @@ export class VercelGoogleProvider extends BaseProvider implements AIProvider {
         apiKey: this.apiKey,
       });
 
+      let systemPrompt = this.buildSystemPrompt();
+      if (options?.hint) {
+        systemPrompt += `\n\n## User Instructions\nThe user has provided the following specific instructions/hint. You MUST incorporate this into your generation:\n"${options.hint}"`;
+      }
+
       const { text } = await generateText({
         model: google(this.model),
-        system: this.buildSystemPrompt(),
+        system: systemPrompt,
         prompt: this.buildAnalysisPrompt(analysis),
         temperature: 0.7,
         maxRetries: 2, // Reduce retries to fail faster
