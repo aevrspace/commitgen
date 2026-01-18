@@ -35,7 +35,7 @@ export class CommitGenProvider implements AIProvider {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "Insufficient credits. Please recharge your account."
+            "Insufficient credits. Please recharge your account.",
           );
         }
         if (response.status === 401) {
@@ -46,7 +46,15 @@ export class CommitGenProvider implements AIProvider {
       }
 
       const data = (await response.json()) as any;
-      const message = data.message;
+      let message = data.message;
+
+      // Clean up conversational prefixes
+      message = message
+        .replace(/^(Here is|Here's) (the|a) commit message.*:\s*/i, "")
+        .replace(/^Sure, here is.*\n/i, "")
+        .replace(/^Title:\s*/i, "")
+        .replace(/^Commit Message:\s*/i, "")
+        .trim();
 
       // Parse the message into CommitMessage format
       // Expected format from prompt: <type>(<scope>): <subject>\n\n<body>

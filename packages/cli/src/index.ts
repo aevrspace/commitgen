@@ -41,7 +41,7 @@ process.on("SIGTERM", () => {
  * Wrapper for inquirer prompts that handles SIGINT gracefully
  */
 async function safePrompt<T extends Answers = Answers>(
-  promptConfig: any
+  promptConfig: any,
 ): Promise<T | null> {
   try {
     const result = await inquirer.prompt(promptConfig);
@@ -136,14 +136,14 @@ class CommitGen {
     console.log(chalk.cyan.bold("\n📊 Analysis:"));
     console.log(
       chalk.gray(
-        `   Files changed: ${chalk.white(analysis.filesChanged.length)}`
-      )
+        `   Files changed: ${chalk.white(analysis.filesChanged.length)}`,
+      ),
     );
     console.log(
-      chalk.gray(`   Additions: ${chalk.green(`+${analysis.additions}`)}`)
+      chalk.gray(`   Additions: ${chalk.green(`+${analysis.additions}`)}`),
     );
     console.log(
-      chalk.gray(`   Deletions: ${chalk.red(`-${analysis.deletions}`)}`)
+      chalk.gray(`   Deletions: ${chalk.red(`-${analysis.deletions}`)}`),
     );
 
     console.log(chalk.cyan.bold("\n📝 Changed files:"));
@@ -155,7 +155,9 @@ class CommitGen {
 
     if (analysis.filesChanged.length > 10) {
       console.log(
-        chalk.gray(`   ... and ${analysis.filesChanged.length - 10} more files`)
+        chalk.gray(
+          `   ... and ${analysis.filesChanged.length - 10} more files`,
+        ),
       );
     }
   }
@@ -196,12 +198,15 @@ class CommitGen {
 
   private combineCommitMessages(messages: CommitMessage[]): CommitMessage {
     const types = messages.map((m) => m.type);
-    const typeCount = types.reduce((acc, t) => {
-      acc[t] = (acc[t] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const typeCount = types.reduce(
+      (acc, t) => {
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
     const mostCommonType = Object.entries(typeCount).sort(
-      (a, b) => b[1] - a[1]
+      (a, b) => b[1] - a[1],
     )[0][0];
 
     const scopes = messages.map((m) => m.scope).filter(Boolean);
@@ -229,7 +234,7 @@ class CommitGen {
   async run(options: CommitGenOptions): Promise<void> {
     console.log(
       chalk.bold.cyan("\n🚀 CommitGen") +
-        chalk.gray(" - AI-Powered Commit Message Generator\n")
+        chalk.gray(" - AI-Powered Commit Message Generator\n"),
     );
 
     if (!this.isGitRepo()) {
@@ -244,7 +249,7 @@ class CommitGen {
       if (analysis.hasUnstaged) {
         console.log(
           chalk.blue("💡 You have unstaged changes. Stage them with:") +
-            chalk.gray(" git add <files>")
+            chalk.gray(" git add <files>"),
         );
       }
       process.exit(0);
@@ -257,8 +262,8 @@ class CommitGen {
       if (issueRef) {
         console.log(
           chalk.cyan(
-            `\n${this.issueTracker.getIssueDisplay(issueRef)} detected`
-          )
+            `\n${this.issueTracker.getIssueDisplay(issueRef)} detected`,
+          ),
         );
       }
     }
@@ -273,7 +278,7 @@ class CommitGen {
           type: "confirm",
           name: "useMultiCommit",
           message: chalk.yellow(
-            "🔄 Multiple concerns detected. Split into separate commits?"
+            "🔄 Multiple concerns detected. Split into separate commits?",
           ),
           default: true,
         },
@@ -294,7 +299,7 @@ class CommitGen {
       historyPattern = await this.historyAnalyzer.getCommitPattern();
       if (historyPattern) {
         console.log(
-          chalk.cyan("\n📜 Personalizing based on your commit history")
+          chalk.cyan("\n📜 Personalizing based on your commit history"),
         );
       }
     }
@@ -303,142 +308,166 @@ class CommitGen {
     let usingFallback = false;
 
     if (options.useAi) {
-      try {
-        const configManager = new ConfigManager();
-        let providerConfig = configManager.getProviderConfig();
+      let retryAI = true;
+      while (retryAI) {
+        retryAI = false; // Default to no retry unless confirmed buy
+        try {
+          const configManager = new ConfigManager();
+          let providerConfig = configManager.getProviderConfig();
 
-        // Override model if specified in options
-        if (options.model) {
-          providerConfig = { ...providerConfig, model: options.model };
-          console.log(chalk.blue(`🎯 Using model: ${options.model}`));
-        }
+          // Override model if specified in options
+          if (options.model) {
+            providerConfig = { ...providerConfig, model: options.model };
+            console.log(chalk.blue(`🎯 Using model: ${options.model}`));
+          }
 
-        if (
-          !providerConfig.apiKey &&
-          !this.hasEnvironmentApiKey(providerConfig.provider)
-        ) {
-          console.log(
-            chalk.yellow("\n⚠️  API key not found for the selected provider.")
-          );
-          const result = await safePrompt<{ shouldConfigure: boolean }>([
-            {
-              type: "confirm",
-              name: "shouldConfigure",
-              message: "Would you like to configure your API key now?",
-              default: true,
-            },
-          ]);
-
-          if (!result) return;
-
-          if (result.shouldConfigure) {
-            await configureCommand();
-            providerConfig = configManager.getProviderConfig();
-          } else {
+          if (
+            !providerConfig.apiKey &&
+            !this.hasEnvironmentApiKey(providerConfig.provider)
+          ) {
             console.log(
-              chalk.gray("Falling back to rule-based suggestions...\n")
+              chalk.yellow(
+                "\n⚠️  API key not found for the selected provider.",
+              ),
             );
-            suggestions = this.getFallbackSuggestions(analysis);
-            usingFallback = true;
-          }
-        }
+            const result = await safePrompt<{ shouldConfigure: boolean }>([
+              {
+                type: "confirm",
+                name: "shouldConfigure",
+                message: "Would you like to configure your API key now?",
+                default: true,
+              },
+            ]);
 
-        if (!usingFallback) {
-          const modelDisplay = providerConfig.model || "default";
+            if (!result) return;
 
-          const provider = createProvider(providerConfig);
-          suggestions = await withLoading(
-            `Generating commit messages using ${providerConfig.provider} (${modelDisplay})...`,
-            async () => await provider.generateCommitMessage(analysis),
-            "Commit messages generated"
-          );
-
-          if (!suggestions || suggestions.length === 0) {
-            throw new Error("No suggestions generated");
-          }
-
-          // Personalize suggestions based on history
-          if (historyPattern) {
-            suggestions = suggestions.map((msg) =>
-              this.historyAnalyzer.personalizeCommitMessage(msg, historyPattern)
-            );
-          }
-
-          // Adjust type based on issue if available
-          if (issueRef) {
-            suggestions = suggestions.map((msg) => ({
-              ...msg,
-              type: this.issueTracker.suggestTypeFromIssue(issueRef, msg.type),
-            }));
-          }
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-
-        // Check if it's an API overload error
-        if (
-          errorMessage.includes("overloaded") ||
-          errorMessage.includes("503")
-        ) {
-          console.warn(chalk.yellow(`\n⚠️  ${errorMessage}`));
-          console.log(
-            chalk.blue(
-              "💡 Tip: You can use 'commitgen --no-use-ai' to skip AI generation"
-            )
-          );
-        } else if (errorMessage.includes("API key")) {
-          console.warn(chalk.yellow(`\n⚠️  ${errorMessage}`));
-
-          const result = await safePrompt<{ shouldReconfigure: boolean }>([
-            {
-              type: "confirm",
-              name: "shouldReconfigure",
-              message: "Would you like to reconfigure your API key?",
-              default: true,
-            },
-          ]);
-
-          if (!result) return;
-
-          if (result.shouldReconfigure) {
-            // Assuming 'program' is available in this scope or passed as an argument
-            // This part of the diff seems to be misplaced or refers to a different context.
-            // I'm placing the login/config checks here as per the instruction,
-            // but noting that `program.opts()` might not be directly accessible here.
-            // If `options` passed to `run` already contains these, then `program.opts()` is redundant.
-            // For now, I'll assume `options` already contains `login` and `config` flags.
-            if (options.login) {
-              await loginCommand();
-              process.exit(0);
-            }
-
-            if (options.config) {
+            if (result.shouldConfigure) {
               await configureCommand();
-              process.exit(0);
+              providerConfig = configManager.getProviderConfig();
+            } else {
+              console.log(
+                chalk.gray("Falling back to rule-based suggestions...\n"),
+              );
+              suggestions = this.getFallbackSuggestions(analysis);
+              usingFallback = true;
             }
+          }
+
+          if (!usingFallback) {
+            const modelDisplay = providerConfig.model || "default";
+
+            const provider = createProvider(providerConfig);
+            suggestions = await withLoading(
+              `Generating commit messages using ${providerConfig.provider} (${modelDisplay})...`,
+              async () => await provider.generateCommitMessage(analysis),
+              "Commit messages generated",
+            );
+
+            if (!suggestions || suggestions.length === 0) {
+              throw new Error("No suggestions generated");
+            }
+
+            // Personalize suggestions based on history
+            if (historyPattern) {
+              suggestions = suggestions.map((msg) =>
+                this.historyAnalyzer.personalizeCommitMessage(
+                  msg,
+                  historyPattern,
+                ),
+              );
+            }
+
+            // Adjust type based on issue if available
+            if (issueRef) {
+              suggestions = suggestions.map((msg) => ({
+                ...msg,
+                type: this.issueTracker.suggestTypeFromIssue(
+                  issueRef,
+                  msg.type,
+                ),
+              }));
+            }
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+
+          // Check if it's an API overload error
+          if (
+            errorMessage.includes("overloaded") ||
+            errorMessage.includes("503")
+          ) {
+            console.warn(chalk.yellow(`\n⚠️  ${errorMessage}`));
             console.log(
               chalk.blue(
-                "\n🔄 Please run the command again with your new configuration."
-              )
+                "💡 Tip: You can use 'commitgen --no-use-ai' to skip AI generation",
+              ),
             );
-            return;
-          }
-        } else {
-          console.warn(
-            chalk.yellow(`\n⚠️  AI generation failed: ${errorMessage}`)
-          );
-        }
+          } else if (errorMessage.includes("Insufficient credits")) {
+            console.warn(chalk.yellow(`\n⚠️  ${errorMessage}`));
+            const result = await safePrompt<{ buyCredits: boolean }>([
+              {
+                type: "confirm",
+                name: "buyCredits",
+                message: "Would you like to buy credits now?",
+                default: true,
+              },
+            ]);
 
-        console.log(
-          chalk.gray("\nFalling back to rule-based suggestions...\n")
-        );
-        suggestions = this.getFallbackSuggestions(analysis);
-        usingFallback = true;
+            if (result && result.buyCredits) {
+              const purchased = await buyCreditsCommand();
+              if (purchased) {
+                retryAI = true;
+                continue; // Retry the loop
+              }
+            }
+          } else if (errorMessage.includes("API key")) {
+            console.warn(chalk.yellow(`\n⚠️  ${errorMessage}`));
+
+            const result = await safePrompt<{ shouldReconfigure: boolean }>([
+              {
+                type: "confirm",
+                name: "shouldReconfigure",
+                message: "Would you like to reconfigure your API key?",
+                default: true,
+              },
+            ]);
+
+            if (!result) return;
+
+            if (result.shouldReconfigure) {
+              if (options.login) {
+                await loginCommand();
+                process.exit(0);
+              }
+
+              if (options.config) {
+                await configureCommand();
+                process.exit(0);
+              }
+              console.log(
+                chalk.blue(
+                  "\n🔄 Please run the command again with your new configuration.",
+                ),
+              );
+              return;
+            }
+          } else {
+            console.warn(
+              chalk.yellow(`\n⚠️  AI generation failed: ${errorMessage}`),
+            );
+          }
+
+          console.log(
+            chalk.gray("\nFalling back to rule-based suggestions...\n"),
+          );
+          suggestions = this.getFallbackSuggestions(analysis);
+          usingFallback = true;
+        }
       }
     } else {
       console.log(
-        chalk.gray("\n📝 Using rule-based suggestions (AI disabled)\n")
+        chalk.gray("\n📝 Using rule-based suggestions (AI disabled)\n"),
       );
       suggestions = this.getFallbackSuggestions(analysis);
       usingFallback = true;
@@ -449,12 +478,12 @@ class CommitGen {
 
   private async runMultiCommit(
     analysis: GitAnalysis,
-    options: CommitGenOptions
+    options: CommitGenOptions,
   ): Promise<void> {
     const groups = this.multiCommitAnalyzer.groupFiles(analysis);
 
     console.log(
-      chalk.cyan.bold(`\n🔄 Splitting into ${groups.length} commits:\n`)
+      chalk.cyan.bold(`\n🔄 Splitting into ${groups.length} commits:\n`),
     );
 
     groups.forEach((group, i) => {
@@ -463,8 +492,8 @@ class CommitGen {
         chalk.gray(
           `   Files: ${group.files.slice(0, 3).join(", ")}${
             group.files.length > 3 ? "..." : ""
-          }`
-        )
+          }`,
+        ),
       );
     });
 
@@ -481,7 +510,7 @@ class CommitGen {
 
     if (!result.proceed) {
       console.log(
-        chalk.yellow("\nCancelled. Falling back to single commit mode.")
+        chalk.yellow("\nCancelled. Falling back to single commit mode."),
       );
       return this.run({ ...options, multiCommit: false });
     }
@@ -490,8 +519,8 @@ class CommitGen {
       const group = groups[i];
       console.log(
         chalk.cyan.bold(
-          `\n📝 Commit ${i + 1}/${groups.length}: ${group.reason}`
-        )
+          `\n📝 Commit ${i + 1}/${groups.length}: ${group.reason}`,
+        ),
       );
 
       // Generate suggestions for this group
@@ -516,7 +545,7 @@ class CommitGen {
 
             try {
               suggestions = await provider.generateCommitMessage(
-                group.analysis
+                group.analysis,
               );
               loader.succeed("Generated");
             } catch (err) {
@@ -534,7 +563,7 @@ class CommitGen {
         group.analysis,
         null,
         options,
-        group.files
+        group.files,
       );
     }
 
@@ -546,7 +575,7 @@ class CommitGen {
     analysis: GitAnalysis,
     issueRef: any,
     options: CommitGenOptions,
-    specificFiles?: string[]
+    specificFiles?: string[],
   ): Promise<void> {
     console.log(chalk.cyan.bold("💡 Suggested commit messages:\n"));
 
@@ -615,7 +644,7 @@ class CommitGen {
           analysis,
           issueRef,
           options,
-          specificFiles
+          specificFiles,
         );
       } else if (actionResult.action === "edit") {
         const editResult = await safePrompt<{ edited: string }>([
@@ -680,7 +709,7 @@ class CommitGen {
           analysis,
           issueRef,
           options,
-          specificFiles
+          specificFiles,
         );
       } else if (actionResult.action === "edit") {
         const editResult = await safePrompt<{ edited: string }>([
@@ -738,16 +767,17 @@ class CommitGen {
     const suggestions: CommitMessage[] = [];
 
     const hasTests = filesChanged.some(
-      (f) => f.includes("test") || f.includes("spec") || f.includes("__tests__")
+      (f) =>
+        f.includes("test") || f.includes("spec") || f.includes("__tests__"),
     );
     const hasDocs = filesChanged.some(
-      (f) => f.includes("README") || f.includes(".md")
+      (f) => f.includes("README") || f.includes(".md"),
     );
     const hasConfig = filesChanged.some(
       (f) =>
         f.includes("config") ||
         f.includes(".json") ||
-        f.includes("package.json")
+        f.includes("package.json"),
     );
 
     if (additions > deletions * 2 && additions > 20) {
@@ -798,7 +828,7 @@ class CommitGen {
         {
           type: "refactor",
           subject: `refactor code`,
-        }
+        },
       );
     }
 
@@ -819,7 +849,7 @@ program
   .option("--login", "Login to CommitGen account") // NEW
   .option(
     "--no-use-ai",
-    "Disable AI generation, use rule-based suggestions only"
+    "Disable AI generation, use rule-based suggestions only",
   )
   .option("-m, --multi-commit", "Enable multi-commit mode for atomic commits")
   .option("--no-multi-commit", "Disable multi-commit mode")
@@ -827,7 +857,7 @@ program
   .option("--no-issues", "Disable issue tracker integration")
   .option(
     "--model <model>",
-    "Specify AI model to use (e.g., gemini-1.5-flash, gemini-2.5-pro)"
+    "Specify AI model to use (e.g., gemini-1.5-flash, gemini-2.5-pro)",
   )
   .action(async (options) => {
     // Check for login flag first - independent of git status
@@ -852,7 +882,9 @@ program
 program
   .command("buy-credits")
   .description("Buy credits for CommitGen")
-  .action(buyCreditsCommand);
+  .action(async () => {
+    await buyCreditsCommand();
+  });
 
 program
   .command("dashboard")
@@ -874,13 +906,13 @@ program
       chalk.gray(
         `API Key: ${
           config.apiKey ? chalk.green("configured") : chalk.red("not set")
-        }`
-      )
+        }`,
+      ),
     );
 
     if (!config.apiKey) {
       console.log(
-        chalk.yellow("\n💡 Run 'commitgen config' to set up your API key")
+        chalk.yellow("\n💡 Run 'commitgen config' to set up your API key"),
       );
     }
   });

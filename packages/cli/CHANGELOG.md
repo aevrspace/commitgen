@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.4](https://github.com/aevrHQ/commitgen/compare/v0.4.3...v0.4.4) (2026-01-17)
+
+
+### Features
+
+* **admin:** Implement authentication and role-based access control. ([a049a70](https://github.com/aevrHQ/commitgen/commit/a049a70e73ffb54dd15904f397c0562bac3d92b8))
+* **cli:** Update buy credits functionality to fetch dynamic packages from server. ([27d7b3d](https://github.com/aevrHQ/commitgen/commit/27d7b3d00573cb02581f36125f0328c53bff0766))
+
+
+### Bug Fixes
+
+* **api:** Improve handling of credits for 100pay payment method. ([74579a8](https://github.com/aevrHQ/commitgen/commit/74579a8433449b2dbd5c3b84a1f9cc5570367742))
+* **auth-api:** Expose user role in GET '/me' route. ([ab6358d](https://github.com/aevrHQ/commitgen/commit/ab6358d780681e3bff60974b7574764bb63190d7))
+* **commitgen:** Improve commit message generation with better error handling and response formatting. ([56449cc](https://github.com/aevrHQ/commitgen/commit/56449ccccc062ac17665cd72d2ba24b90d3a5a8a))
+
+
+### Code Refactoring
+
+* **lib/payment:** Update payment logic to use dynamic credits per USD. ([b1624fb](https://github.com/aevrHQ/commitgen/commit/b1624fbd6cb16d0d421b97680cc44d1fb274da30))
+
 ### [0.4.3](https://github.com/aevrHQ/commitgen/compare/v0.4.2...v0.4.3) (2026-01-12)
 
 
