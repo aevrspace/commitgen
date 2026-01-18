@@ -357,14 +357,25 @@ class CommitGen {
             const modelDisplay = providerConfig.model || "default";
 
             const provider = createProvider(providerConfig);
-            suggestions = await withLoading(
+            const { messages: generatedMessages, usage } = await withLoading(
               `Generating commit messages using ${providerConfig.provider} (${modelDisplay})...`,
               async () => await provider.generateCommitMessage(analysis),
               "Commit messages generated",
             );
 
+            suggestions = generatedMessages;
+
             if (!suggestions || suggestions.length === 0) {
               throw new Error("No suggestions generated");
+            }
+
+            if (usage) {
+              console.log(
+                chalk.gray(
+                  `   💎 Credits: ${chalk.yellow(usage.cost)} used | ${chalk.green(usage.remaining)} remaining` +
+                    (usage.tier ? ` (${usage.tier})` : ""),
+                ),
+              );
             }
 
             // Personalize suggestions based on history
@@ -544,9 +555,10 @@ class CommitGen {
             loader.start();
 
             try {
-              suggestions = await provider.generateCommitMessage(
+              const { messages } = await provider.generateCommitMessage(
                 group.analysis,
               );
+              suggestions = messages;
               loader.succeed("Generated");
             } catch (err) {
               loader.stop();

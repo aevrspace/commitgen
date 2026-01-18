@@ -1,5 +1,10 @@
 import { AIProvider } from "../types";
-import { GitAnalysis, CommitMessage, CommitGenProviderConfig } from "../types";
+import {
+  GitAnalysis,
+  CommitMessage,
+  CommitGenProviderConfig,
+  GenerationResult,
+} from "../types";
 
 export class CommitGenProvider implements AIProvider {
   name = "commitgen";
@@ -15,7 +20,9 @@ export class CommitGenProvider implements AIProvider {
       process.env.COMMITGEN_API_URL || "https://commitgen.aevr.space";
   }
 
-  async generateCommitMessage(analysis: GitAnalysis): Promise<CommitMessage[]> {
+  async generateCommitMessage(
+    analysis: GitAnalysis,
+  ): Promise<GenerationResult> {
     if (!this.token) {
       throw new Error("Authorization token is required for CommitGen provider");
     }
@@ -62,13 +69,15 @@ export class CommitGenProvider implements AIProvider {
 
       if (!firstLineMatch) {
         // Fallback or simple parsing
-        return [
-          {
-            type: "chore",
-            subject: message.split("\n")[0],
-            body: message.split("\n").slice(1).join("\n").trim(),
-          },
-        ];
+        return {
+          messages: [
+            {
+              type: "chore",
+              subject: message.split("\n")[0],
+              body: message.split("\n").slice(1).join("\n").trim(),
+            },
+          ],
+        };
       }
 
       const type = firstLineMatch[1];
@@ -76,14 +85,21 @@ export class CommitGenProvider implements AIProvider {
       const subject = firstLineMatch[3];
       const body = message.substring(firstLineMatch[0].length).trim();
 
-      return [
-        {
-          type,
-          scope,
-          subject,
-          body,
+      return {
+        messages: [
+          {
+            type,
+            scope,
+            subject,
+            body,
+          },
+        ],
+        usage: {
+          cost: data.creditsUsed || 0,
+          remaining: data.creditsRemaining || 0,
+          tier: data.usage?.tier,
         },
-      ];
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw error;
